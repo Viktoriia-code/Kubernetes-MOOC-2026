@@ -1,4 +1,4 @@
-# devops-with-kubernetes-2025
+# Kubernetes-MOOC-2026
 
 ## Exercises
 
