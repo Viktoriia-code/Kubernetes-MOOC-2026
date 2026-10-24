@@ -28,7 +28,7 @@ The Kubernetes resources are defined in the [`manifests`](./manifests) folder:
 The request flow is:
 
 ```text
-localhost:8081
+http://localhost:8081/
   -> Ingress port 80
   -> log-output-ingress
   -> log-output-svc:2345
