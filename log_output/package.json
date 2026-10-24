@@ -1,7 +1,7 @@
 {
   "name": "log_output",
   "version": "1.1.0",
-  "main": "index.js",
+  "main": "server.js",
   "dependencies": {
     "uuid": "^9.0.0"
   }

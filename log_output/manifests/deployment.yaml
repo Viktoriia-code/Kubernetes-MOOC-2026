@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: log-output
+  name: log-output-dep
 spec:
   replicas: 1
   selector:
@@ -12,8 +12,21 @@ spec:
       labels:
         app: log-output
     spec:
+      volumes:
+        - name: shared-status
+          emptyDir: {}
       containers:
-        - name: log-output
-          image: vikikone/log-output:v1.0
+        - name: log-output-writer
+          image: vikikone/log-output:v1.10
+          command: ["node", "generator.js"]
+          volumeMounts:
+            - name: shared-status
+              mountPath: /usr/src/app/files
+        - name: log-output-reader
+          image: vikikone/log-output:v1.10
+          command: ["node", "server.js"]
           ports:
             - containerPort: 3000
+          volumeMounts:
+            - name: shared-status
+              mountPath: /usr/src/app/files
