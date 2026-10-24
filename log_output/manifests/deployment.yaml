@@ -15,3 +15,5 @@ spec:
       containers:
         - name: log-output
           image: vikikone/log-output:v1.0
+          ports:
+            - containerPort: 3000
