@@ -3,12 +3,11 @@ kind: Service
 metadata:
   name: the-project
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
-    app: the-project # This is the app as declared in the deployment.
+    app: the-project
   ports:
     - name: http
-      nodePort: 30080 # This is the port that is available outside. Value for nodePort can be between 30000-32767
       protocol: TCP
       port: 3004
-      targetPort: 3001 # This is the target port
+      targetPort: 3001
