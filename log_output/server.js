@@ -3,7 +3,33 @@ const fs = require('fs');
 
 const port = process.env.PORT || 3000;
 const statusFile = process.env.STATUS_FILE || '/usr/src/app/files/status.txt';
-const countFile = process.env.COUNT_FILE || '/usr/src/app/files/count.txt';
+const pingPongUrl = process.env.PINGPONG_URL || 'http://ping-pong-svc:3005/pings';
+
+function getPingPongCount() {
+  return new Promise((resolve, reject) => {
+    http.get(pingPongUrl, (pingPongResponse) => {
+      let contents = '';
+
+      pingPongResponse.on('data', (chunk) => {
+        contents += chunk;
+      });
+      pingPongResponse.on('end', () => {
+        if (pingPongResponse.statusCode !== 200) {
+          reject(new Error(`Ping-pong returned status ${pingPongResponse.statusCode}`));
+          return;
+        }
+
+        const match = contents.match(/^pong (\d+)$/);
+        if (!match) {
+          reject(new Error(`Unexpected Ping-pong response: ${contents}`));
+          return;
+        }
+
+        resolve(match[1]);
+      });
+    }).on('error', reject);
+  });
+}
 
 const server = http.createServer((request, response) => {
   if (request.url !== '/' && request.url !== '/status') {
@@ -14,7 +40,7 @@ const server = http.createServer((request, response) => {
 
   Promise.all([
     fs.promises.readFile(statusFile, 'utf8'),
-    fs.promises.readFile(countFile, 'utf8'),
+    getPingPongCount(),
   ])
     .then(([contents, count]) => {
       response.writeHead(200, { 'Content-Type': 'text/plain' });

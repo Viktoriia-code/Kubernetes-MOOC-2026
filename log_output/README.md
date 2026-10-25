@@ -1,9 +1,14 @@
-# Exercise 1.11 - Persisting data
+# Exercise 2.1 - Connecting pods
 
 ## Task
-Let's share data between "Ping-pong" and "Log output" applications using persistent volumes. Create both a PersistentVolume and PersistentVolumeClaim and alter the Deployment to utilize it. As PersistentVolumes are often maintained by cluster administrators rather than developers and those are not application specific you should keep the definition for those separated, perhaps in own folder.
+Connect the "Log output" and "Ping-pong" applications over HTTP using the Kubernetes Service DNS name.
 
-Save the number of requests to the "Ping-pong" application into a file in the volume and output it with the timestamp and the random string when sending a request to our "Log output" application. In the end, the two pods should share a persistent volume between the two applications. So the browser should display the following when accessing the "Log output" application:
+The Ping-pong application exposes two HTTP endpoints:
+
+- `/pingpong` is the browser-facing endpoint and increments the counter.
+- `/pings` returns the current counter for the Log output application without incrementing it.
+
+The Log output application requests `/pings` when serving `/` or `/status`:
 
 ```text
 2020-03-30T12:15:17.705Z: 8523ecb1-c716-4cb6-a044-b9e83bb98e43.
@@ -19,8 +24,7 @@ The application consists of two containers:
 
 The writer runs `generator.js`, while the reader runs `server.js`.
 
-Both containers share a persistent volume claim mounted at `/usr/src/app/files`. This allows
-them to exchange data through a common file, and also shares the volume with Ping-pong.
+Both containers share an `emptyDir` mounted at `/usr/src/app/files` for the status file. The volume is local to the Log output pod and is not shared with Ping-pong.
 
 The reader listens on port `3000` inside the container.
 
@@ -38,7 +42,7 @@ The image is available on Docker Hub:
 
 [vikikone/log-output](https://hub.docker.com/r/vikikone/log-output)
 
-Image tag: `vikikone/log-output:v1.11`
+Image tag: `vikikone/log-output:v2.1`
 
 ## Kubernetes Resources
 
@@ -51,8 +55,6 @@ The application is deployed with one replica and two containers in a single Pod.
 | Container | `log-output-reader` | Serves the shared file over HTTP |
 | Service | `log-output-svc` | Exposes port `2345` and forwards requests to port `3000` |
 | Ingress | `log-output-ingress` | Routes HTTP requests to the Service |
-| PersistentVolume | `shared-storage` | Provides shared storage for both applications |
-| PersistentVolumeClaim | `shared-storage-claim` | Mounts the persistent storage in both deployments |
 
 ## Request Flow
 
@@ -77,7 +79,9 @@ Pod, container port 3000
 log-output-reader
         |
         v
-Shared file: status.txt
+Log output status file
+        |
+        +--> http://ping-pong-svc:3005/pingpong
 ```
 
 ## Project Structure
@@ -85,9 +89,6 @@ Shared file: status.txt
 ```text
 Kubernetes-MOOC-2026/
 └── log_output/
-    ├── persistent_volumes/
-    │   ├── persistentvolume.yaml
-    │   └── persistentvolumeclaim.yaml
     ├── manifests/
     │   ├── deployment.yaml
     │   ├── service.yaml
@@ -116,46 +117,21 @@ Kubernetes-MOOC-2026/
 Build the application image with a new tag from the `log_output` directory:
 
 ```powershell
-docker build -t vikikone/log-output:v1.11 .
+docker build -t vikikone/log-output:v2.1 .
 ```
 
 If the image needs to be uploaded to Docker Hub, push it:
 
 ```powershell
-docker push vikikone/log-output:v1.11
+docker push vikikone/log-output:v2.1
 ```
 
-### 2. Create the PersistentVolume
-
-Apply the PersistentVolume manifest from the repository root:
-
-```powershell
-kubectl apply -f .\log_output\persistent_volumes\persistentvolume.yaml
-```
-
-### 3. Create the PersistentVolumeClaim
-
-The PersistentVolumeClaim is named `shared-storage-claim` and requests storage from the PersistentVolume.
-
-Apply the manifest:
-
-```powershell
-kubectl apply -f .\log_output\persistent_volumes\persistentvolumeclaim.yaml
-```
-
-Verify the storage resources:
-
-```powershell
-kubectl get pv
-kubectl get pvc
-```
-
-### 4. Deploy the Application
+### 2. Deploy the Application
 
 Apply the Kubernetes manifests:
 
 ```powershell
-kubectl apply -f .\log_output\manifests\
+kubectl apply -f .\manifests
 ```
 
 Check the Deployment and Pods:
@@ -167,7 +143,7 @@ kubectl get pods
 
 The Deployment is named `log-output-dep`.
 
-### 5. Verify Persisted Data
+### 3. Verify Persisted Data
 
 The application uses two containers in the same Pod:
 
@@ -190,7 +166,7 @@ List the files in the shared storage directory:
 kubectl exec deployment/log-output-dep -c log-output-reader -- ls -l /usr/src/app/files
 ```
 
-### 6. Test the application
+### 4. Test the application
 
 Send an HTTP GET request to the root endpoint:
 
@@ -208,7 +184,7 @@ Both endpoints should return the contents of the shared file, including timestam
 
 The timestamp should change every five seconds, while the UUID should remain the same during the lifetime of the writer container.
 
-### 7. Stop and restart the application
+### 5. Stop and restart the application
 
 To stop the application while keeping the Kubernetes resources, scale the
 Deployment down to zero replicas:
@@ -224,6 +200,4 @@ kubectl scale deployment/log-output --replicas=1
 kubectl rollout status deployment/log-output
 ```
 
-The application uses the `shared-storage-claim` PVC. Its contents remain available when
-either application pod is recreated. The Ping-pong request count and Log output status
-file are stored in the same persistent volume.
+The application uses the `shared-storage-claim` PVC. Its contents remain available when either application pod is recreated. The Ping-pong request count and Log output status file are stored in the same persistent volume.

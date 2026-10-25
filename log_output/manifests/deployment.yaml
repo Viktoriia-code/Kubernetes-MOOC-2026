@@ -12,22 +12,24 @@ spec:
       labels:
         app: log-output
     spec:
-      volumes:
-        - name: shared-status
-          persistentVolumeClaim:
-            claimName: shared-storage-claim
       containers:
         - name: log-output-writer
-          image: vikikone/log-output:v1.11
+          image: vikikone/log-output:v2.1
           command: ["node", "generator.js"]
           volumeMounts:
-            - name: shared-status
+            - name: log-status
               mountPath: /usr/src/app/files
         - name: log-output-reader
-          image: vikikone/log-output:v1.11
+          image: vikikone/log-output:v2.1
           command: ["node", "server.js"]
+          env:
+            - name: PINGPONG_URL
+              value: http://ping-pong-svc:3005/pings
           ports:
             - containerPort: 3000
           volumeMounts:
-            - name: shared-status
+            - name: log-status
               mountPath: /usr/src/app/files
+      volumes:
+        - name: log-status
+          emptyDir: {}

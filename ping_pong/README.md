@@ -1,9 +1,9 @@
-# Exercise 1.11. - Persisting data
+# Exercise 2.1 - Connecting pods
 
 ## Task
-Let's share data between "Ping-pong" and "Log output" applications using persistent volumes. Create both a PersistentVolume and PersistentVolumeClaim and alter the Deployment to utilize it. As PersistentVolumes are often maintained by cluster administrators rather than developers and those are not application specific you should keep the definition for those separated, perhaps in own folder.
+Connect the Log output application and the Ping pong application with HTTP. So, instead of sharing data via files, use an HTTP GET endpoint in the Ping pong app to respond with the number of pongs for the Log output app. Remove the volume between the two applications for the time being.
 
-Save the number of requests to the "Ping-pong" application into a file in the volume and output it with the timestamp and the random string when sending a request to our "Log output" application. In the end, the two pods should share a persistent volume between the two applications. So the browser should display the following when accessing the "Log output" application:
+The response of the HTTP GET to Log output will stay the same:
 
 ```text
 2020-03-30T12:15:17.705Z: 8523ecb1-c716-4cb6-a044-b9e83bb98e43.
@@ -11,7 +11,9 @@ Ping / Pongs: 3
 ```
 
 ## Overview
-The application responds to HTTP GET requests at `/pingpong` with a message containing a counter. The counter increases by one for each request and is stored in `/usr/src/app/files/count.txt` on the shared persistent volume.
+The application responds to HTTP GET requests at `/pingpong` with an in-memory
+counter. The counter resets when the pod restarts. The `/pings` endpoint
+returns the current counter without incrementing it, for use by Log output.
 
 ## Technologies
 
@@ -40,7 +42,7 @@ Each request increases the counter by one.
 
 The application image is available on Docker Hub:
 
-`vikikone/ping-pong:v1.11`
+`vikikone/ping-pong:v2.1`
 
 ## Kubernetes Resources
 
@@ -55,46 +57,51 @@ The application shares an Ingress resource with the Log output application.
 | `/` | `log-output-svc` | `2345` |
 | `/pingpong` | `ping-pong-svc` | `3005` |
 
-## Deployment
+## Implementation steps
+
+### 1. Build the Docker Image
+
+Build the application image with a new tag from the `ping_pong` directory:
+
+```powershell
+docker build -t vikikone/ping-pong:v2.1 .
+```
+
+If the image needs to be uploaded to Docker Hub, push it:
+
+```powershell
+docker push vikikone/ping-pong:v2.1
+```
+
+### 2. Deploy the Application
 
 Apply the Kubernetes manifests from the project directory:
 
-    kubectl apply -f manifests/deployment.yaml
-    kubectl apply -f manifests/service.yaml
-    kubectl apply -f ..\log_output\manifests\ingress.yaml
+```powershell
+kubectl apply -f .\manifests
+kubectl apply -f ..\log_output\manifests\ingress.yaml
+kubectl rollout status deployment/ping-pong
+```
 
-## Testing
+## 3. Testing
 
 Send a GET request to the application through the Ingress:
 
-    curl.exe http://localhost:8081/pingpong
+```powershell
+curl.exe http://localhost:8081/pingpong
+```
 
 Repeat the request to see the counter increase.
 
 Check the Deployment status:
 
-    kubectl get deployments
-    kubectl get pods
-
-Check the Service and Ingress:
-
-    kubectl get service ping-pong-svc
-    kubectl get ingress
-
-## Notes
-
-The counter is stored in the shared persistent volume and is available to both the Ping-pong
-and Log output pods.
-
-## Persistent storage
-
-Apply the persistent volume resources before the application deployments:
-
 ```powershell
-kubectl apply -f ..\log_output\persistent_volumes\persistentvolume.yaml
-kubectl apply -f ..\log_output\persistent_volumes\persistentvolumeclaim.yaml
-kubectl apply -f manifests
+kubectl get deployments
+kubectl get pods
 ```
 
-The `ping-pong` deployment and the Log output deployment both mount the
-`shared-storage-claim` PVC at `/usr/src/app/files`.
+Check the Service and Ingress:
+```powershell
+kubectl get service ping-pong-svc
+kubectl get ingress
+```
