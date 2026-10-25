@@ -17,4 +17,6 @@
 - [1.11.](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/1.11)
 - [1.12.](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/1.12/the_project)
 - [1.13.](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/1.13/the_project)
+
+### Chapter 3
 - [2.1.](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/2.1)
