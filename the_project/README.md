@@ -1,11 +1,15 @@
-# Exercise 1.13 - The project, step 7
+# Exercise 2.2 - The project, step 8
 
 ## Task
-It is time to start adding some real functionality to our project! As promised earlier, the project shall have a todo app functionality. So in this exercise
+The next step is to create a new service that takes care of saving the todo items.
 
-1. add an input field. The input should not take todos that are over 140 characters long.
-2. add a send button. It does not have to send the todo yet.
-3. add a list of the existing todos with some hardcoded todos.
+This new service, let us call it todo-backend, should have a GET /todos endpoint for fetching the list of todos and a POST /todos endpoint for creating a new todo. The todos can be saved in memory, we'll add a database later.
+
+The role of the service that we made in previous exercises (Todo-app in the figure) is to serve the HTML and possibly JavaScript to the browser. Also, the logic for serving random pictures and caching those remains in that service. The new service then takes care of the todo items.
+
+So the role of todo-app is pretty much the same, it serves the html with rended todo items that it gets from the new todo-backend service.
+
+After this exercise, you should be able to create new todos using the form, and the created todos should be rendered in the browser.
 
 ## What was done
 
@@ -15,19 +19,20 @@ The project is exposed through a Kubernetes Ingress and serves a cached image:
 - The `the-project` Service is an internal ClusterIP Service.
 - The Service forwards port `3004` to the application's port `3001`.
 - The `the-project-ingress` Ingress routes HTTP traffic from `/` to the Service.
-- The `/image` endpoint fetches from `https://picsum.photos/1200` only when the cache
-  is missing or older than ten minutes.
-- The image is stored in the `image-cache-claim` persistent volume claim, so it
-  survives container restarts.
+- The `/image` endpoint fetches from `https://picsum.photos/1200` only when the cache is missing or older than ten minutes.
+- The image is stored in the `image-cache-claim` persistent volume claim, so it survives container restarts.
+- `todo-backend` stores todos in memory and exposes GET and POST `/todos`.
+- The frontend proxies `/todos` requests to `todo-backend-svc:2345`.
 - The todo input has a maximum length of 140 characters.
-- The Send button is present but does not submit todos yet.
-- The page displays a hardcoded list of existing todos.
+- The Send button creates a todo and refreshes the list.
 
 ## Docker image
 
 The Docker image is available at [`vikikone/todo-app`](https://hub.docker.com/r/vikikone/todo-app).
 
-Tag used: `vikikone/todo-app:v1.14`
+Tag used: `vikikone/todo-app:v2.2`
+
+The backend image is `vikikone/todo-backend:v2.2`.
 
 ## Run the project
 
@@ -51,8 +56,14 @@ kubectl config use-context k3d-k3s-default
 From the `the_project` directory:
 
 ```powershell
-docker build -t vikikone/todo-app:v1.14 .
-docker push vikikone/todo-app:v1.14
+docker build -t vikikone/todo-app:v2.2 .
+docker push vikikone/todo-app:v2.2
+
+cd ..\todo_backend
+docker build -t vikikone/todo-backend:v2.2 .
+docker push vikikone/todo-backend:v2.2
+
+cd ..\the_project
 ```
 
 ### 3. Deploy the application
@@ -60,9 +71,9 @@ docker push vikikone/todo-app:v1.14
 Run these commands from the `the_project` directory:
 
 ```bash
-kubectl apply -f manifests/persistentvolume.yaml
-kubectl apply -f manifests/persistentvolumeclaim.yaml
+kubectl apply -f ..\todo_backend\manifests
 kubectl apply -f manifests
+kubectl rollout status deployment/todo-backend
 kubectl rollout status deployment/the-project
 ```
 
@@ -102,10 +113,7 @@ curl.exe http://localhost:8081/
 curl.exe -o image-1.jpg http://localhost:8081/image
 ```
 
-The first image request downloads and stores the image. Requests during the
-next ten minutes reuse the persistent cached file. After ten minutes, one
-request may still receive the old image while the application refreshes the
-cache in the background; a subsequent request receives the new image.
+The first image request downloads and stores the image. Requests during the next ten minutes reuse the persistent cached file. After ten minutes, one request may still receive the old image while the application refreshes the cache in the background; a subsequent request receives the new image.
 
 ## Stop and restart the application
 

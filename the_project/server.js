@@ -7,6 +7,7 @@ const imageUrl = process.env.IMAGE_URL || 'https://picsum.photos/1200';
 const cacheDirectory = process.env.CACHE_DIRECTORY || '/app/data';
 const imagePath = path.join(cacheDirectory, 'image.jpg');
 const cacheMaxAge = 10 * 60 * 1000;
+const todoBackendUrl = process.env.TODO_BACKEND_URL || 'http://todo-backend-svc:2345';
 let refreshPromise;
 
 async function downloadImage() {
@@ -49,111 +50,57 @@ async function getCachedImage() {
   return fs.readFile(imagePath);
 }
 
-function sendPage(response) {
-  response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-  response.end(`<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Todo App</title>
-    <style>
-      body {
-        align-items: center;
-        background: #fff;
-        color: #333;
-        display: flex;
-        flex-direction: column;
-        font-family: Arial, sans-serif;
-        margin: 0;
-        min-height: 100vh;
-      }
-      main {
-        align-items: center;
-        display: flex;
-        flex-direction: column;
-        padding: 48px 20px 24px;
-        width: min(700px, calc(100% - 40px));
-      }
-      h1 {
-        font-size: 42px;
-        margin: 0 0 28px;
-      }
-      img {
-        border-radius: 10px;
-        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
-        display: block;
-        height: auto;
-        max-width: min(1200px, 100%);
-        width: 506px;
-      }
-      form {
-        display: flex;
-        gap: 10px;
-        margin-top: 28px;
-        width: 100%;
-      }
-      input {
-        border: 1px solid #bbb;
-        border-radius: 4px;
-        box-sizing: border-box;
-        flex: 1;
-        font-size: 16px;
-        padding: 11px 12px;
-      }
-      button {
-        background: #555;
-        border: 0;
-        border-radius: 4px;
-        color: #fff;
-        cursor: pointer;
-        font-size: 16px;
-        padding: 0 22px;
-      }
-      ul {
-        align-self: stretch;
-        font-size: 18px;
-        line-height: 1.5;
-        margin: 28px 0 0;
-        padding-left: 28px;
-      }
-      p {
-        color: #666;
-        font-size: 21px;
-        font-weight: 600;
-        margin: 28px 0 0;
-      }
-    </style>
-  </head>
-  <body>
-    <main>
-      <h1>Todo App</h1>
-      <img src="/image" alt="A random picture from Lorem Picsum">
-      <form>
-        <input type="text" name="todo" maxlength="140" placeholder="Enter a newtodo (max 140 characters)" aria-label="Todo" required>
-        <button type="button">Send</button>
-      </form>
-      <h2>Todos</h2>
-      <ul>
-        <li>Learn Kubernetes basics</li>
-        <li>Deploy application to cluster</li>
-        <li>Configure persistent volumes</li>
-      </ul>
-    </main>
-  </body>
-</html>`);
+const publicDirectory = path.join(__dirname, 'public');
+
+const contentTypes = {
+  '.html': 'text/html; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'application/javascript; charset=utf-8',
+};
+
+const staticFiles = {
+  '/': 'index.html',
+  '/styles.css': 'styles.css',
+  '/app.js': 'app.js',
+};
+
+async function sendStatic(response, fileName) {
+  const filePath = path.join(publicDirectory, fileName);
+  const content = await fs.readFile(filePath);
+  response.writeHead(200, {
+    'Content-Type': contentTypes[path.extname(fileName)] || 'application/octet-stream',
+  });
+  response.end(content);
 }
 
 const server = http.createServer(async (request, response) => {
   try {
+    if (request.url === '/todos' && (request.method === 'GET' || request.method === 'POST')) {
+      const backendResponse = await fetch(`${todoBackendUrl}/todos`, {
+        method: request.method,
+        headers: request.method === 'POST' ? { 'Content-Type': 'application/json' } : undefined,
+        body: request.method === 'POST' ? await new Promise((resolve, reject) => {
+          let body = '';
+          request.on('data', (chunk) => { body += chunk; });
+          request.on('end', () => resolve(body));
+          request.on('error', reject);
+        }) : undefined,
+      });
+      response.writeHead(backendResponse.status, {
+        'Content-Type': backendResponse.headers.get('content-type') || 'text/plain',
+      });
+      response.end(await backendResponse.text());
+      return;
+    }
+
     if (request.method !== 'GET') {
       response.writeHead(405, { Allow: 'GET' });
       response.end('Method not allowed');
       return;
     }
 
-    if (request.url === '/') {
-      sendPage(response);
+    if (staticFiles[request.url]) {
+      await sendStatic(response, staticFiles[request.url]);
       return;
     }
 

@@ -20,3 +20,4 @@
 
 ### Chapter 3
 - [2.1.](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/2.1)
+- [2.2.](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/2.2)

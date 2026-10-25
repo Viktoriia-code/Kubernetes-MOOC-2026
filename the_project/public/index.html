@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Todo App</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main>
+      <h1>Todo App</h1>
+      <img src="/image" alt="A random picture from Lorem Picsum">
+      <form id="todo-form">
+        <input id="todo-content" type="text" name="todo" maxlength="140" placeholder="Enter a new todo (max 140 characters)" aria-label="Todo" required>
+        <button type="submit">Send</button>
+      </form>
+      <h2>Todos</h2>
+      <p id="error" class="error" role="alert"></p>
+      <ul id="todos"></ul>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>
