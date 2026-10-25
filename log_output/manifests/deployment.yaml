@@ -14,16 +14,17 @@ spec:
     spec:
       volumes:
         - name: shared-status
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: shared-storage-claim
       containers:
         - name: log-output-writer
-          image: vikikone/log-output:v1.10
+          image: vikikone/log-output:v1.11
           command: ["node", "generator.js"]
           volumeMounts:
             - name: shared-status
               mountPath: /usr/src/app/files
         - name: log-output-reader
-          image: vikikone/log-output:v1.10
+          image: vikikone/log-output:v1.11
           command: ["node", "server.js"]
           ports:
             - containerPort: 3000

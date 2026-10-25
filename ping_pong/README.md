@@ -1,14 +1,17 @@
-# Exercise 1.9. - More services (Ping-pong application)
+# Exercise 1.11. - Persisting data
 
 ## Task
-Develop a second application that simply responds with "pong 0" to a GET request and increases a counter (the 0) so that you can see how many requests have been sent. The counter should be in memory so it may reset at some point. Create a new deployment for it and have it share ingress with "Log output" application. Route requests directed '/pingpong' to it.
+Let's share data between "Ping-pong" and "Log output" applications using persistent volumes. Create both a PersistentVolume and PersistentVolumeClaim and alter the Deployment to utilize it. As PersistentVolumes are often maintained by cluster administrators rather than developers and those are not application specific you should keep the definition for those separated, perhaps in own folder.
 
-In future exercises, this second application will be referred to as "ping-pong application". It will be used with "Log output" application.
+Save the number of requests to the "Ping-pong" application into a file in the volume and output it with the timestamp and the random string when sending a request to our "Log output" application. In the end, the two pods should share a persistent volume between the two applications. So the browser should display the following when accessing the "Log output" application:
 
-The ping-pong application will need to listen to requests on '/pingpong', so you may have to make changes to its code. This can be avoided by configuring the Ingress to rewrite the path, but we will leave that as an optional exercise. You can check out https://kubernetes.io/docs/concepts/services-networking/ingress/#the-ingress-resource(opens in a new tab)
+```text
+2020-03-30T12:15:17.705Z: 8523ecb1-c716-4cb6-a044-b9e83bb98e43.
+Ping / Pongs: 3
+```
 
 ## Overview
-The application responds to HTTP GET requests at `/pingpong` with a message containing a counter. The counter starts at `0` and increases by one for each request. The counter is stored in memory and may reset when the application restarts.
+The application responds to HTTP GET requests at `/pingpong` with a message containing a counter. The counter increases by one for each request and is stored in `/usr/src/app/files/count.txt` on the shared persistent volume.
 
 ## Technologies
 
@@ -23,7 +26,7 @@ The application responds to HTTP GET requests at `/pingpong` with a message cont
 
 The application listens on port `3000` inside the container.
 
-The application responds to `GET /pingpong` with an in-memory request counter:
+The application responds to `GET /pingpong` with a persistent request counter:
 
 ```text
 pong 0
@@ -37,7 +40,7 @@ Each request increases the counter by one.
 
 The application image is available on Docker Hub:
 
-`vikikone/ping-pong:v1.0`
+`vikikone/ping-pong:v1.11`
 
 ## Kubernetes Resources
 
@@ -80,4 +83,18 @@ Check the Service and Ingress:
 
 ## Notes
 
-The counter is stored in application memory. It is not persistent and may reset if the application restarts.
+The counter is stored in the shared persistent volume and is available to both the Ping-pong
+and Log output pods.
+
+## Persistent storage
+
+Apply the persistent volume resources before the application deployments:
+
+```powershell
+kubectl apply -f ..\log_output\persistent_volumes\persistentvolume.yaml
+kubectl apply -f ..\log_output\persistent_volumes\persistentvolumeclaim.yaml
+kubectl apply -f manifests
+```
+
+The `ping-pong` deployment and the Log output deployment both mount the
+`shared-storage-claim` PVC at `/usr/src/app/files`.

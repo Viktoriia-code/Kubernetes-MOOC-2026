@@ -1,25 +1,14 @@
-# Exercise 1.10 - Even more services (Two containers and shared storage)
+# Exercise 1.11 - Persisting data
 
 ## Task
-Split the "Log output" application into two different containers within a single pod:
+Let's share data between "Ping-pong" and "Log output" applications using persistent volumes. Create both a PersistentVolume and PersistentVolumeClaim and alter the Deployment to utilize it. As PersistentVolumes are often maintained by cluster administrators rather than developers and those are not application specific you should keep the definition for those separated, perhaps in own folder.
 
-- One generates a random string on startup and writes a line with the random string and timestamp every 5 seconds into a file.
-- The other reads that file and provides the content in the HTTP GET endpoint for the user to see
+Save the number of requests to the "Ping-pong" application into a file in the volume and output it with the timestamp and the random string when sending a request to our "Log output" application. In the end, the two pods should share a persistent volume between the two applications. So the browser should display the following when accessing the "Log output" application:
 
-You may find [this](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_logs/) helpful now since there are more than one container running inside a pod.
-
-## What was done
-
-This application:
-
-- The `log-output-writer` container generates one UUID at startup and appends a timestamp and the UUID to `/usr/src/app/files/status.txt` every five seconds.
-- The `log-output-reader` container reads the shared file and serves its contents over HTTP at `/` and `/status`.
-- The writer runs [`generator.js`](./generator.js), while the reader runs [`server.js`](./server.js).
-- Uses a shared `emptyDir` volume to exchange data between both containers in the same Pod.
-- The reader listens on port `3000` inside the container.
-- Is deployed to Kubernetes with one replica and two containers in a single Pod.
-- Uses the `log-output-svc` ClusterIP Service to forward port `2345` to the reader container's port `3000`.
-- Uses the `log-output-ingress` Ingress to route HTTP traffic from `/` to the Service.
+```text
+2020-03-30T12:15:17.705Z: 8523ecb1-c716-4cb6-a044-b9e83bb98e43.
+Ping / Pongs: 3
+```
 
 ## Application
 
@@ -30,7 +19,8 @@ The application consists of two containers:
 
 The writer runs `generator.js`, while the reader runs `server.js`.
 
-Both containers share an `emptyDir` volume mounted at `/usr/src/app/files`. This allows them to exchange data through a common file.
+Both containers share a persistent volume claim mounted at `/usr/src/app/files`. This allows
+them to exchange data through a common file, and also shares the volume with Ping-pong.
 
 The reader listens on port `3000` inside the container.
 
@@ -48,7 +38,7 @@ The image is available on Docker Hub:
 
 [vikikone/log-output](https://hub.docker.com/r/vikikone/log-output)
 
-Image tag: `vikikone/log-output:v1.10`
+Image tag: `vikikone/log-output:v1.11`
 
 ## Kubernetes Resources
 
@@ -61,7 +51,8 @@ The application is deployed with one replica and two containers in a single Pod.
 | Container | `log-output-reader` | Serves the shared file over HTTP |
 | Service | `log-output-svc` | Exposes port `2345` and forwards requests to port `3000` |
 | Ingress | `log-output-ingress` | Routes HTTP requests to the Service |
-| Volume | `log-file` | Shares the log file between containers |
+| PersistentVolume | `shared-storage` | Provides shared storage for both applications |
+| PersistentVolumeClaim | `shared-storage-claim` | Mounts the persistent storage in both deployments |
 
 ## Request Flow
 
@@ -91,20 +82,17 @@ Shared file: status.txt
 
 ## Project Structure
 
-The Kubernetes resources are defined in the `manifests` folder.
-
 ```text
-log_output/
-├── generator.js
-├── server.js
-├── Dockerfile
-├── package.json
-├── package-lock.json
-├── README.md
-└── manifests/
-    ├── deployment.yaml
-    ├── service.yaml
-    └── ingress.yaml
+Kubernetes-MOOC-2026/
+└── log_output/
+    ├── persistent_volumes/
+    │   ├── persistentvolume.yaml
+    │   └── persistentvolumeclaim.yaml
+    ├── manifests/
+    │   ├── deployment.yaml
+    │   ├── service.yaml
+    │   └── ingress.yaml
+    └── ...
 ```
 
 * `generator.js` generates the UUID and writes timestamped entries to the file.
@@ -123,73 +111,83 @@ log_output/
 
 ## Implementation steps
 
-### 1. Create or select a k3d cluster
+### 1. Build the Docker Image
 
-For a new cluster, map the host port `8081` to the Ingress controller's port
-`80`:
-
-```bash
-k3d cluster create k3s-default --agents 2 -p "8081:80@loadbalancer"
-kubectl config use-context k3d-k3s-default
-```
-
-If the cluster already exists, select it instead:
-
-```bash
-kubectl config use-context k3d-k3s-default
-```
-
-### 2. Build and push the Docker image
-
-Build the image:
+Build the application image with a new tag from the `log_output` directory:
 
 ```powershell
-docker build -t vikikone/log-output:v1.10 .
+docker build -t vikikone/log-output:v1.11 .
 ```
 
-Push it to Docker Hub:
+If the image needs to be uploaded to Docker Hub, push it:
 
 ```powershell
-docker push vikikone/log-output:v1.10
+docker push vikikone/log-output:v1.11
 ```
 
-### 3. Apply all Kubernetes resources
+### 2. Create the PersistentVolume
 
-Apply the Deployment, Service, and Ingress resources from the project directory:
-
-```bash
-kubectl apply -f manifests
-```
-
-### 4. Check the deployment
-
-Wait for the Deployment to become ready:
+Apply the PersistentVolume manifest from the repository root:
 
 ```powershell
-kubectl rollout status deployment/log-output
+kubectl apply -f .\log_output\persistent_volumes\persistentvolume.yaml
 ```
 
-Check the Deployments, Pods, Services, and Ingress resources:
+### 3. Create the PersistentVolumeClaim
+
+The PersistentVolumeClaim is named `shared-storage-claim` and requests storage from the PersistentVolume.
+
+Apply the manifest:
 
 ```powershell
-kubectl get deployments,pods
-kubectl get svc,ingress
+kubectl apply -f .\log_output\persistent_volumes\persistentvolumeclaim.yaml
 ```
 
-The Log output Pod should show `2/2` containers ready.
-
-### 5. Inspect container logs
-
-View the writer container logs:
+Verify the storage resources:
 
 ```powershell
-kubectl logs -f deployment/log-output -c log-output-writer
+kubectl get pv
+kubectl get pvc
 ```
 
-In a separate PowerShell window, view the reader container logs:
+### 4. Deploy the Application
+
+Apply the Kubernetes manifests:
 
 ```powershell
-kubectl logs -f deployment/log-output -c log-output-reader
+kubectl apply -f .\log_output\manifests\
+```
+
+Check the Deployment and Pods:
+
+```powershell
+kubectl get deployments
+kubectl get pods
+```
+
+The Deployment is named `log-output-dep`.
+
+### 5. Verify Persisted Data
+
+The application uses two containers in the same Pod:
+
+- **Writer:** generates data and writes it to files.
+- **Reader:** reads the stored files.
+
+Both containers mount the same PVC so they can access the same files.
+
+Read the counter file from the reader container:
+
+```powershell
+kubectl exec deployment/log-output-dep -c log-output-reader -- cat /usr/src/app/files/count.txt
+```
+
+Run the command again after a short wait. The count should change as the writer updates the file.
+
+List the files in the shared storage directory:
+
+```powershell
+kubectl exec deployment/log-output-dep -c log-output-reader -- ls -l /usr/src/app/files
 ```
 
 ### 6. Test the application
@@ -226,4 +224,6 @@ kubectl scale deployment/log-output --replicas=1
 kubectl rollout status deployment/log-output
 ```
 
-The application uses an `emptyDir` volume. Its contents remain available while the Pod exists, but are lost when the Pod is deleted. A newly created Pod receives a new volume, and the writer generates a new UUID and starts a new log file.
+The application uses the `shared-storage-claim` PVC. Its contents remain available when
+either application pod is recreated. The Ping-pong request count and Log output status
+file are stored in the same persistent volume.

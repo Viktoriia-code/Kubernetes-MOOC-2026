@@ -12,8 +12,15 @@ spec:
       labels:
         app: ping-pong
     spec:
+      volumes:
+        - name: shared-storage
+          persistentVolumeClaim:
+            claimName: shared-storage-claim
       containers:
         - name: ping-pong
-          image: vikikone/ping-pong:v1.0
+          image: vikikone/ping-pong:v1.11
           ports:
             - containerPort: 3000
+          volumeMounts:
+            - name: shared-storage
+              mountPath: /usr/src/app/files
