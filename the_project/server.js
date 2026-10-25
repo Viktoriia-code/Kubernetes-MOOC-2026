@@ -1,11 +1,145 @@
 const http = require('http');
+const fs = require('fs').promises;
+const path = require('path');
 
-const port = process.env.PORT || 3000;
+const port = Number(process.env.PORT || 3001);
+const imageUrl = process.env.IMAGE_URL || 'https://picsum.photos/1200';
+const cacheDirectory = process.env.CACHE_DIRECTORY || '/app/data';
+const imagePath = path.join(cacheDirectory, 'image.jpg');
+const cacheMaxAge = 10 * 60 * 1000;
+let refreshPromise;
 
-const server = http.createServer((req, res) => {
-  res.end('Todo app will be here soon');
+async function downloadImage() {
+  const response = await fetch(imageUrl);
+  if (!response.ok) {
+    throw new Error(`Image API returned status ${response.status}`);
+  }
+
+  const image = Buffer.from(await response.arrayBuffer());
+  const temporaryPath = `${imagePath}.tmp`;
+  await fs.writeFile(temporaryPath, image);
+  await fs.rename(temporaryPath, imagePath);
+  console.log(`Cached a new image at ${new Date().toISOString()}`);
+}
+
+function refreshImage() {
+  if (!refreshPromise) {
+    refreshPromise = downloadImage().finally(() => {
+      refreshPromise = undefined;
+    });
+  }
+  return refreshPromise;
+}
+
+async function getCachedImage() {
+  try {
+    const stats = await fs.stat(imagePath);
+    if (Date.now() - stats.mtimeMs > cacheMaxAge) {
+      refreshImage().catch((error) => {
+        console.error(`Failed to refresh cached image: ${error.message}`);
+      });
+    }
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      throw error;
+    }
+    await refreshImage();
+  }
+
+  return fs.readFile(imagePath);
+}
+
+function sendPage(response) {
+  response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+  response.end(`<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Todo App</title>
+    <style>
+      body {
+        align-items: center;
+        background: #fff;
+        color: #333;
+        display: flex;
+        flex-direction: column;
+        font-family: Arial, sans-serif;
+        margin: 0;
+        min-height: 100vh;
+      }
+      main {
+        align-items: center;
+        display: flex;
+        flex-direction: column;
+        padding: 48px 20px 24px;
+      }
+      h1 {
+        font-size: 42px;
+        margin: 0 0 28px;
+      }
+      img {
+        border-radius: 10px;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+        display: block;
+        height: auto;
+        max-width: min(1200px, 100%);
+        width: 506px;
+      }
+      p {
+        color: #666;
+        font-size: 21px;
+        font-weight: 600;
+        margin: 28px 0 0;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Todo App</h1>
+      <img src="/image" alt="A random picture from Lorem Picsum">
+      <p>DevOps with Kubernetes 2026</p>
+    </main>
+  </body>
+</html>`);
+}
+
+const server = http.createServer(async (request, response) => {
+  try {
+    if (request.method !== 'GET') {
+      response.writeHead(405, { Allow: 'GET' });
+      response.end('Method not allowed');
+      return;
+    }
+
+    if (request.url === '/') {
+      sendPage(response);
+      return;
+    }
+
+    if (request.url === '/image') {
+      const image = await getCachedImage();
+      response.writeHead(200, { 'Content-Type': 'image/jpeg', 'Cache-Control': 'no-cache' });
+      response.end(image);
+      return;
+    }
+
+    response.writeHead(404);
+    response.end('Not found');
+  } catch (error) {
+    console.error(`Failed to serve request: ${error.message}`);
+    response.writeHead(500, { 'Content-Type': 'text/plain' });
+    response.end('Could not serve the project');
+  }
 });
 
-server.listen(port, () => {
-  console.log(`Server started in port ${port}`);
-});
+fs.mkdir(cacheDirectory, { recursive: true })
+  .then(() => {
+    server.listen(port, '0.0.0.0', () => {
+      console.log(`Server started on port ${port}`);
+    });
+  })
+  .catch((error) => {
+    console.error(`Failed to create cache directory: ${error.message}`);
+    process.exitCode = 1;
+  });

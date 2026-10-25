@@ -12,11 +12,19 @@ spec:
       labels:
         app: the-project
     spec:
+      volumes:
+        - name: image-cache
+          persistentVolumeClaim:
+            claimName: image-cache-claim
       containers:
         - name: the-project
-          image: vikikone/todo-app:v1.5
+          image: vikikone/todo-app:v1.12
+          imagePullPolicy: Always
           env:
             - name: PORT
               value: "3001"
           ports:
             - containerPort: 3001
+          volumeMounts:
+            - name: image-cache
+              mountPath: /app/data
