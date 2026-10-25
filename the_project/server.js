@@ -73,6 +73,7 @@ function sendPage(response) {
         display: flex;
         flex-direction: column;
         padding: 48px 20px 24px;
+        width: min(700px, calc(100% - 40px));
       }
       h1 {
         font-size: 42px;
@@ -86,6 +87,36 @@ function sendPage(response) {
         max-width: min(1200px, 100%);
         width: 506px;
       }
+      form {
+        display: flex;
+        gap: 10px;
+        margin-top: 28px;
+        width: 100%;
+      }
+      input {
+        border: 1px solid #bbb;
+        border-radius: 4px;
+        box-sizing: border-box;
+        flex: 1;
+        font-size: 16px;
+        padding: 11px 12px;
+      }
+      button {
+        background: #555;
+        border: 0;
+        border-radius: 4px;
+        color: #fff;
+        cursor: pointer;
+        font-size: 16px;
+        padding: 0 22px;
+      }
+      ul {
+        align-self: stretch;
+        font-size: 18px;
+        line-height: 1.5;
+        margin: 28px 0 0;
+        padding-left: 28px;
+      }
       p {
         color: #666;
         font-size: 21px;
@@ -98,7 +129,16 @@ function sendPage(response) {
     <main>
       <h1>Todo App</h1>
       <img src="/image" alt="A random picture from Lorem Picsum">
-      <p>DevOps with Kubernetes 2026</p>
+      <form>
+        <input type="text" name="todo" maxlength="140" placeholder="Enter a newtodo (max 140 characters)" aria-label="Todo" required>
+        <button type="button">Send</button>
+      </form>
+      <h2>Todos</h2>
+      <ul>
+        <li>Learn Kubernetes basics</li>
+        <li>Deploy application to cluster</li>
+        <li>Configure persistent volumes</li>
+      </ul>
     </main>
   </body>
 </html>`);

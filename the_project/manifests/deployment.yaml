@@ -18,7 +18,7 @@ spec:
             claimName: image-cache-claim
       containers:
         - name: the-project
-          image: vikikone/todo-app:v1.12
+          image: vikikone/todo-app:v1.14
           imagePullPolicy: Always
           env:
             - name: PORT

@@ -1,19 +1,11 @@
-# Exercise 1.12 - The project, step 6
+# Exercise 1.13 - The project, step 7
 
 ## Task
-Since the project looks a bit boring right now, let's add a picture!
+It is time to start adding some real functionality to our project! As promised earlier, the project shall have a todo app functionality. So in this exercise
 
-The goal is to add an hourly image to the project.
-
-Get a random picture from Lorem Picsum like https://picsum.photos/1200 and display it in the project. Find a way to store the image so it stays the same for 10 minutes.
-
-After 10 minutes have passed, you might give the old pic still one more time, and for the next request, there should be a new picture
-Make sure to cache the image into a persistent volume so that the API isn't needed for new images every time we access the application or the container crashes.
-
-The best way to test what happens when your container shuts down is likely by shutting down the container, so you can add logic for that as well, for testing purposes.
-
-After this exercise, your app can look for example like the following:
-
+1. add an input field. The input should not take todos that are over 140 characters long.
+2. add a send button. It does not have to send the todo yet.
+3. add a list of the existing todos with some hardcoded todos.
 
 ## What was done
 
@@ -27,12 +19,15 @@ The project is exposed through a Kubernetes Ingress and serves a cached image:
   is missing or older than ten minutes.
 - The image is stored in the `image-cache-claim` persistent volume claim, so it
   survives container restarts.
+- The todo input has a maximum length of 140 characters.
+- The Send button is present but does not submit todos yet.
+- The page displays a hardcoded list of existing todos.
 
 ## Docker image
 
 The Docker image is available at [`vikikone/todo-app`](https://hub.docker.com/r/vikikone/todo-app).
 
-Tag used: `vikikone/todo-app:v1.12`
+Tag used: `vikikone/todo-app:v1.14`
 
 ## Run the project
 
@@ -56,8 +51,8 @@ kubectl config use-context k3d-k3s-default
 From the `the_project` directory:
 
 ```powershell
-docker build -t vikikone/todo-app:v1.12 .
-docker push vikikone/todo-app:v1.12
+docker build -t vikikone/todo-app:v1.14 .
+docker push vikikone/todo-app:v1.14
 ```
 
 ### 3. Deploy the application
