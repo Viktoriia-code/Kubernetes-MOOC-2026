@@ -2,6 +2,7 @@ const form = document.getElementById('todo-form');
 const input = document.getElementById('todo-content');
 const todos = document.getElementById('todos');
 const error = document.getElementById('error');
+let todoMaxLength;
 
 function renderTodos(items) {
     todos.replaceChildren(...items.map((todo) => {
@@ -21,7 +22,7 @@ form.addEventListener('submit', async (event) => {
     event.preventDefault();
     error.textContent = '';
     const content = input.value.trim();
-    if (!content || content.length > 140) return;
+    if (!content || content.length > todoMaxLength) return;
 
     const response = await fetch('/todos', {
     method: 'POST',
@@ -36,6 +37,15 @@ form.addEventListener('submit', async (event) => {
     await loadTodos();
 });
 
-loadTodos().catch((loadError) => {
+async function loadConfiguration() {
+    const response = await fetch('/config');
+    if (!response.ok) throw new Error('Could not load configuration');
+    const config = await response.json();
+    todoMaxLength = config.todoMaxLength;
+    input.maxLength = todoMaxLength;
+    input.placeholder = `Enter a new todo (max ${todoMaxLength} characters)`;
+}
+
+Promise.all([loadConfiguration(), loadTodos()]).catch((loadError) => {
     error.textContent = loadError.message;
 });

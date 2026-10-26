@@ -1,19 +1,19 @@
-# Exercise 2.4 - The project, step 9
+# Exercise 2.6 - The project, step 10
 
 ## Task
-Create a namespace called project for the project and move everything related to the project to that namespace. Use the new namespace in the future for all the project related exercises.
+Make sure that your project has no hard coded ports, URLs, or other configurations in the source code. Pass all the configurations to pods as env variables that are defined either in a config map or in deployments.
 
 ## What was done
 
-- Created a namespace `project` for the project
+- Runtime ports, URLs, cache settings, and todo length are provided through ConfigMaps.
 
 ## Docker image
 
 The Docker image is available at [`vikikone/todo-app`](https://hub.docker.com/r/vikikone/todo-app).
 
-Tag used: `vikikone/todo-app:v2.2`
+Tag used: `vikikone/todo-app:v2.6`
 
-The backend image is `vikikone/todo-backend:v2.2`.
+The backend image is `vikikone/todo-backend:v2.6`.
 
 ## Implementation steps
 
@@ -22,12 +22,12 @@ The backend image is `vikikone/todo-backend:v2.2`.
 From the `the_project` directory:
 
 ```powershell
-docker build -t vikikone/todo-app:v2.2 .
-docker push vikikone/todo-app:v2.2
+docker build -t vikikone/todo-app:v2.6 .
+docker push vikikone/todo-app:v2.6
 
 cd ..\todo_backend
-docker build -t vikikone/todo-backend:v2.2 .
-docker push vikikone/todo-backend:v2.2
+docker build -t vikikone/todo-backend:v2.6 .
+docker push vikikone/todo-backend:v2.6
 
 cd ..\the_project
 ```

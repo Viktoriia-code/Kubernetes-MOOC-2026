@@ -1,12 +1,17 @@
 const http = require('http');
 
-const port = Number(process.env.PORT || 3000);
+const port = Number(process.env.PORT);
+const todoMaxLength = Number(process.env.TODO_MAX_LENGTH);
 const todos = [
   { id: 1, content: 'Learn Kubernetes basics' },
   { id: 2, content: 'Deploy application to cluster' },
   { id: 3, content: 'Configure persistent volumes' },
 ];
 let nextId = todos.length + 1;
+
+if (!Number.isFinite(port) || !Number.isFinite(todoMaxLength)) {
+  throw new Error('Required todo backend configuration is missing or invalid');
+}
 
 function sendJson(response, status, body) {
   response.writeHead(status, { 'Content-Type': 'application/json' });
@@ -36,8 +41,8 @@ const server = http.createServer(async (request, response) => {
 
   try {
     const todo = JSON.parse(await readBody(request));
-    if (typeof todo.content !== 'string' || todo.content.trim().length === 0 || todo.content.length > 140) {
-      sendJson(response, 400, { error: 'Todo content must be between 1 and 140 characters' });
+    if (typeof todo.content !== 'string' || todo.content.trim().length === 0 || todo.content.length > todoMaxLength) {
+      sendJson(response, 400, { error: `Todo content must be between 1 and ${todoMaxLength} characters` });
       return;
     }
 

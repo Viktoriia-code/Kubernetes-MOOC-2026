@@ -2,13 +2,19 @@ const http = require('http');
 const fs = require('fs').promises;
 const path = require('path');
 
-const port = Number(process.env.PORT || 3001);
-const imageUrl = process.env.IMAGE_URL || 'https://picsum.photos/1200';
-const cacheDirectory = process.env.CACHE_DIRECTORY || '/app/data';
+const port = Number(process.env.PORT);
+const imageUrl = process.env.IMAGE_URL;
+const cacheDirectory = process.env.CACHE_DIRECTORY;
+const cacheMaxAge = Number(process.env.CACHE_MAX_AGE_MS);
+const todoMaxLength = Number(process.env.TODO_MAX_LENGTH);
 const imagePath = path.join(cacheDirectory, 'image.jpg');
-const cacheMaxAge = 10 * 60 * 1000;
-const todoBackendUrl = process.env.TODO_BACKEND_URL || 'http://todo-backend-svc.project:2345';
+const todoBackendUrl = process.env.TODO_BACKEND_URL;
 let refreshPromise;
+
+if (!Number.isFinite(port) || !imageUrl || !cacheDirectory || !Number.isFinite(cacheMaxAge)
+  || !Number.isFinite(todoMaxLength) || !todoBackendUrl) {
+  throw new Error('Required project configuration is missing or invalid');
+}
 
 async function downloadImage() {
   const response = await fetch(imageUrl);
@@ -75,6 +81,12 @@ async function sendStatic(response, fileName) {
 
 const server = http.createServer(async (request, response) => {
   try {
+    if (request.url === '/config' && request.method === 'GET') {
+      response.writeHead(200, { 'Content-Type': 'application/json' });
+      response.end(JSON.stringify({ todoMaxLength }));
+      return;
+    }
+
     if (request.url === '/todos' && (request.method === 'GET' || request.method === 'POST')) {
       const backendResponse = await fetch(`${todoBackendUrl}/todos`, {
         method: request.method,

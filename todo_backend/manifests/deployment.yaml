@@ -15,7 +15,10 @@ spec:
     spec:
       containers:
         - name: todo-backend
-          image: vikikone/todo-backend:v2.2
+          image: vikikone/todo-backend:v2.6
           imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: todo-backend-config
           ports:
             - containerPort: 3000
