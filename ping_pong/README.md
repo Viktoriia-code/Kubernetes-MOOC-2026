@@ -1,16 +1,15 @@
-# Exercise 2.3 - Keep them separated
+# Exercise 2.7 - Stateful applications
 
 ## Task
-Create a namespace called exercises for the applications in the exercises. Move the "Log output" and "Ping-pong" to that namespace and use that in the future for all of the exercises, except the project that shall have a separate namespace. You can follow the course material using the default namespace.
+Run a Postgres database as a stateful set (with one replica) and save the Ping-pong application counter into the database.
+
 ## Overview
-The application responds to HTTP GET requests at `/pingpong` with an in-memory
-counter. The counter resets when the pod restarts. The `/pings` endpoint
-returns the current counter without incrementing it, for use by Log output.
+The application responds to HTTP GET requests at `/pingpong` using a counter stored in PostgreSQL. The `/pings` endpoint returns the current counter without incrementing it, for use by Log output. The counter survives Ping-pong pod restarts because PostgreSQL uses a StatefulSet with a persistent volume claim.
 
 ## Technologies
 
 * Node.js
-* Express
+* PostgreSQL
 * Docker
 * Kubernetes
 * k3d
@@ -34,15 +33,18 @@ Each request increases the counter by one.
 
 The application image is available on Docker Hub:
 
-`vikikone/ping-pong:v2.1`
+`vikikone/ping-pong:v2.7`
 
 ## Kubernetes Resources
 
-The application runs in a Kubernetes Deployment named `ping-pong`.
+The application runs in a Kubernetes Deployment named `ping-pong`. PostgreSQL
+runs in a one-replica StatefulSet named `postgres`.
 
 The Service `ping-pong-svc` exposes port `3005` and forwards requests to port `3000` in the application container.
 
 The application shares an Ingress resource with the Log output application.
+
+The PostgreSQL StatefulSet uses the headless `postgres-svc` Service and a `volumeClaimTemplates` entry with the `local-path` storage class.
 
 | Path | Service | Service port |
 |---|---|---:|
@@ -56,13 +58,13 @@ The application shares an Ingress resource with the Log output application.
 Build the application image with a new tag from the `ping_pong` directory:
 
 ```powershell
-docker build -t vikikone/ping-pong:v2.1 .
+docker build -t vikikone/ping-pong:v2.7 .
 ```
 
 If the image needs to be uploaded to Docker Hub, push it:
 
 ```powershell
-docker push vikikone/ping-pong:v2.1
+docker push vikikone/ping-pong:v2.7
 ```
 
 ### 2. Deploy the Application
@@ -77,8 +79,11 @@ Apply the Kubernetes manifests from the project directory:
 
 ```powershell
 kubectl apply -f .\manifests
+kubectl rollout status statefulset/postgres -n exercises
 kubectl rollout status deployment/ping-pong -n exercises
 ```
+
+The manifests create the PostgreSQL Secret, database ConfigMap, headless Service, one-replica StatefulSet, and Ping-pong Deployment. The StatefulSet creates its persistent volume claim automatically through `volumeClaimTemplates`.
 
 ## 3. Testing
 
@@ -95,6 +100,7 @@ Check the Deployment status:
 ```powershell
 kubectl get deployments -n exercises
 kubectl get pods -n exercises
+kubectl get statefulset,pvc -n exercises
 ```
 
 Check the Service and Ingress:
