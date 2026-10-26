@@ -7,7 +7,7 @@ const imageUrl = process.env.IMAGE_URL || 'https://picsum.photos/1200';
 const cacheDirectory = process.env.CACHE_DIRECTORY || '/app/data';
 const imagePath = path.join(cacheDirectory, 'image.jpg');
 const cacheMaxAge = 10 * 60 * 1000;
-const todoBackendUrl = process.env.TODO_BACKEND_URL || 'http://todo-backend-svc:2345';
+const todoBackendUrl = process.env.TODO_BACKEND_URL || 'http://todo-backend-svc.project:2345';
 let refreshPromise;
 
 async function downloadImage() {

@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: the-project
+  namespace: project
 spec:
   replicas: 1
   selector:
@@ -24,7 +25,7 @@ spec:
             - name: PORT
               value: "3001"
             - name: TODO_BACKEND_URL
-              value: http://todo-backend-svc:2345
+              value: http://todo-backend-svc.project:2345
           ports:
             - containerPort: 3001
           volumeMounts:

@@ -2,6 +2,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: image-cache-claim
+  namespace: project
 spec:
   storageClassName: image-cache
   accessModes:
