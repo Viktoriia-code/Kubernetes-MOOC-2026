@@ -15,15 +15,20 @@ spec:
     spec:
       containers:
         - name: log-output-writer
-          image: vikikone/log-output:v2.1
+          image: vikikone/log-output:v2.5
           command: ["node", "generator.js"]
           volumeMounts:
             - name: log-status
               mountPath: /usr/src/app/files
         - name: log-output-reader
-          image: vikikone/log-output:v2.1
+          image: vikikone/log-output:v2.5
           command: ["node", "server.js"]
           env:
+            - name: MESSAGE
+              valueFrom:
+                configMapKeyRef:
+                  name: log-output-config
+                  key: MESSAGE
             - name: PINGPONG_URL
               value: http://ping-pong-svc.exercises:3005/pings
           ports:
@@ -31,6 +36,12 @@ spec:
           volumeMounts:
             - name: log-status
               mountPath: /usr/src/app/files
+            - name: log-output-config
+              mountPath: /usr/src/app/config
+              readOnly: true
       volumes:
         - name: log-status
           emptyDir: {}
+        - name: log-output-config
+          configMap:
+            name: log-output-config

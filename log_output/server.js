@@ -3,6 +3,8 @@ const fs = require('fs');
 
 const port = process.env.PORT || 3000;
 const statusFile = process.env.STATUS_FILE || '/usr/src/app/files/status.txt';
+const informationFile = process.env.INFORMATION_FILE || '/usr/src/app/config/information.txt';
+const message = process.env.MESSAGE || '';
 const pingPongUrl = process.env.PINGPONG_URL || 'http://ping-pong-svc:3005/pings';
 
 function getPingPongCount() {
@@ -39,12 +41,13 @@ const server = http.createServer((request, response) => {
   }
 
   Promise.all([
+    fs.promises.readFile(informationFile, 'utf8'),
     fs.promises.readFile(statusFile, 'utf8'),
     getPingPongCount(),
   ])
-    .then(([contents, count]) => {
+    .then(([information, contents, count]) => {
       response.writeHead(200, { 'Content-Type': 'text/plain' });
-      response.end(`${contents}Ping / Pongs: ${count.trim()}\n`);
+      response.end(`file content: ${information.trim()}\nenv variable: MESSAGE=${message}\n${contents}Ping / Pongs: ${count.trim()}\n`);
     })
     .catch((error) => {
       console.error(`Failed to read application status: ${error.message}`);
