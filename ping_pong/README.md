@@ -1,15 +1,7 @@
-# Exercise 2.1 - Connecting pods
+# Exercise 2.3 - Keep them separated
 
 ## Task
-Connect the Log output application and the Ping pong application with HTTP. So, instead of sharing data via files, use an HTTP GET endpoint in the Ping pong app to respond with the number of pongs for the Log output app. Remove the volume between the two applications for the time being.
-
-The response of the HTTP GET to Log output will stay the same:
-
-```text
-2020-03-30T12:15:17.705Z: 8523ecb1-c716-4cb6-a044-b9e83bb98e43.
-Ping / Pongs: 3
-```
-
+Create a namespace called exercises for the applications in the exercises. Move the "Log output" and "Ping-pong" to that namespace and use that in the future for all of the exercises, except the project that shall have a separate namespace. You can follow the course material using the default namespace.
 ## Overview
 The application responds to HTTP GET requests at `/pingpong` with an in-memory
 counter. The counter resets when the pod restarts. The `/pings` endpoint
@@ -75,12 +67,17 @@ docker push vikikone/ping-pong:v2.1
 
 ### 2. Deploy the Application
 
+Create the namespace with kubectl (if it doesn't exist):
+
+```powershell
+kubectl create namespace exercises
+```
+
 Apply the Kubernetes manifests from the project directory:
 
 ```powershell
 kubectl apply -f .\manifests
-kubectl apply -f ..\log_output\manifests\ingress.yaml
-kubectl rollout status deployment/ping-pong
+kubectl rollout status deployment/ping-pong -n exercises
 ```
 
 ## 3. Testing
@@ -96,12 +93,12 @@ Repeat the request to see the counter increase.
 Check the Deployment status:
 
 ```powershell
-kubectl get deployments
-kubectl get pods
+kubectl get deployments -n exercises
+kubectl get pods -n exercises
 ```
 
 Check the Service and Ingress:
 ```powershell
-kubectl get service ping-pong-svc
-kubectl get ingress
+kubectl get service ping-pong-svc -n exercises
+kubectl get ingress -n exercises
 ```

@@ -1,19 +1,7 @@
-# Exercise 2.1 - Connecting pods
+# Exercise 2.3 - Keep them separated
 
 ## Task
-Connect the "Log output" and "Ping-pong" applications over HTTP using the Kubernetes Service DNS name.
-
-The Ping-pong application exposes two HTTP endpoints:
-
-- `/pingpong` is the browser-facing endpoint and increments the counter.
-- `/pings` returns the current counter for the Log output application without incrementing it.
-
-The Log output application requests `/pings` when serving `/` or `/status`:
-
-```text
-2020-03-30T12:15:17.705Z: 8523ecb1-c716-4cb6-a044-b9e83bb98e43.
-Ping / Pongs: 3
-```
+Create a namespace called exercises for the applications in the exercises. Move the "Log output" and "Ping-pong" to that namespace and use that in the future for all of the exercises, except the project that shall have a separate namespace. You can follow the course material using the default namespace.
 
 ## Application
 
@@ -28,6 +16,8 @@ Both containers share an `emptyDir` mounted at `/usr/src/app/files` for the stat
 
 The reader listens on port `3000` inside the container.
 
+Both (log_output and ping_pong) applications run in the `exercises` namespace. When the reader serves `/` or `/status`, it reads `status.txt` and makes an HTTP GET request to the Ping-pong Service at `http://ping-pong-svc.exercises:3005/pings`. The `/pings` endpoint returns the current counter without incrementing it, while the browser-facing `/pingpong` endpoint increments the counter.
+
 ## Technologies
 
 * Node.js
@@ -35,6 +25,7 @@ The reader listens on port `3000` inside the container.
 * Kubernetes
 * k3d
 * Ingress
+* kubens
 
 ## Docker Image
 
@@ -42,19 +33,7 @@ The image is available on Docker Hub:
 
 [vikikone/log-output](https://hub.docker.com/r/vikikone/log-output)
 
-Image tag: `vikikone/log-output:v2.1`
-
-## Kubernetes Resources
-
-The application is deployed with one replica and two containers in a single Pod.
-
-| Resource | Name | Purpose |
-|---|---|---|
-| Deployment | `log-output` | Runs the application Pod |
-| Container | `log-output-writer` | Generates and writes log entries |
-| Container | `log-output-reader` | Serves the shared file over HTTP |
-| Service | `log-output-svc` | Exposes port `2345` and forwards requests to port `3000` |
-| Ingress | `log-output-ingress` | Routes HTTP requests to the Service |
+Image tag: `vikikone/log-output:v2.1
 
 ## Request Flow
 
@@ -81,7 +60,7 @@ log-output-reader
         v
 Log output status file
         |
-        +--> http://ping-pong-svc:3005/pingpong
+        +--> http://ping-pong-svc.exercises:3005/pings
 ```
 
 ## Project Structure
@@ -128,7 +107,13 @@ docker push vikikone/log-output:v2.1
 
 ### 2. Deploy the Application
 
-Apply the Kubernetes manifests:
+Create the namespace with kubectl:
+
+```powershell
+kubectl create namespace exercises
+```
+
+Then apply the Kubernetes manifests:
 
 ```powershell
 kubectl apply -f .\manifests
@@ -137,8 +122,8 @@ kubectl apply -f .\manifests
 Check the Deployment and Pods:
 
 ```powershell
-kubectl get deployments
-kubectl get pods
+kubectl get deployments -n exercises
+kubectl get pods -n exercises
 ```
 
 The Deployment is named `log-output-dep`.
@@ -197,7 +182,5 @@ To start the application again, scale it back to one replica:
 
 ```bash
 kubectl scale deployment/log-output --replicas=1
-kubectl rollout status deployment/log-output
+kubectl rollout status deployment/log-output-dep -n exercises
 ```
-
-The application uses the `shared-storage-claim` PVC. Its contents remain available when either application pod is recreated. The Ping-pong request count and Log output status file are stored in the same persistent volume.

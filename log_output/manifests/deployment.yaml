@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: log-output-dep
+  namespace: exercises
 spec:
   replicas: 1
   selector:
@@ -24,7 +25,7 @@ spec:
           command: ["node", "server.js"]
           env:
             - name: PINGPONG_URL
-              value: http://ping-pong-svc:3005/pings
+              value: http://ping-pong-svc.exercises:3005/pings
           ports:
             - containerPort: 3000
           volumeMounts:
