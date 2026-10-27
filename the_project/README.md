@@ -1,11 +1,26 @@
-# Exercise 2.6 - The project, step 10
+# Exercise 2.8 - The project, step 11
 
 ## Task
-Make sure that your project has no hard coded ports, URLs, or other configurations in the source code. Pass all the configurations to pods as env variables that are defined either in a config map or in deployments.
+Create a database and save the todos there. Again, the database should be defined as a stateful set with one replica.
+
+Use Secrets and/or ConfigMaps to have the backend access the database.
 
 ## What was done
 
-- Runtime ports, URLs, cache settings, and todo length are provided through ConfigMaps.
+- Runtime ports, URLs, cache settings, and todo length are provided through
+  ConfigMaps.
+- The project frontend displays todos and sends new todos to the backend.
+- The todo backend stores todos in PostgreSQL instead of application memory.
+- PostgreSQL runs as a one-replica StatefulSet in the `project` namespace.
+- PostgreSQL uses a persistent volume claim created by its
+  `volumeClaimTemplates`.
+- The backend receives database host, port, name, and user through a ConfigMap.
+- The database password is provided through a Kubernetes Secret.
+- The backend waits for PostgreSQL before starting its HTTP server.
+- Initial example todos are inserted only when the database table is empty.
+
+The backend API is documented in
+[`todo_backend/README.md`](../todo_backend/README.md).
 
 ## Docker image
 
@@ -13,7 +28,7 @@ The Docker image is available at [`vikikone/todo-app`](https://hub.docker.com/r/
 
 Tag used: `vikikone/todo-app:v2.6`
 
-The backend image is `vikikone/todo-backend:v2.6`.
+The backend image is `vikikone/todo-backend:v2.8`.
 
 ## Implementation steps
 
@@ -26,8 +41,8 @@ docker build -t vikikone/todo-app:v2.6 .
 docker push vikikone/todo-app:v2.6
 
 cd ..\todo_backend
-docker build -t vikikone/todo-backend:v2.6 .
-docker push vikikone/todo-backend:v2.6
+docker build -t vikikone/todo-backend:v2.8 .
+docker push vikikone/todo-backend:v2.8
 
 cd ..\the_project
 ```
@@ -45,6 +60,7 @@ Run these commands from the `the_project` directory:
 ```bash
 kubectl apply -f ..\todo_backend\manifests
 kubectl apply -f manifests
+kubectl rollout status statefulset/postgres -n project
 kubectl rollout status deployment/todo-backend -n project
 kubectl rollout status deployment/the-project -n project
 ```
@@ -52,9 +68,10 @@ kubectl rollout status deployment/the-project -n project
 ### 3. Check the resources
 
 ```bash
-kubectl get deployments,pods -n project
+kubectl get deployments,statefulset,pods,pvc -n project
 kubectl get svc,ingress -n project
 kubectl logs -n project -f deployment/the-project
+kubectl logs -n project deployment/todo-backend
 ```
 
 ### 4. Access the application

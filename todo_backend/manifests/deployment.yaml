@@ -15,10 +15,16 @@ spec:
     spec:
       containers:
         - name: todo-backend
-          image: vikikone/todo-backend:v2.6
+          image: vikikone/todo-backend:v2.8
           imagePullPolicy: Always
           envFrom:
             - configMapRef:
                 name: todo-backend-config
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: todo-database-secret
+                  key: postgres-password
           ports:
             - containerPort: 3000

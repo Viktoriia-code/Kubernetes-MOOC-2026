@@ -6,3 +6,7 @@ metadata:
 data:
   PORT: "3000"
   TODO_MAX_LENGTH: "140"
+  DB_HOST: postgres-svc
+  DB_PORT: "5432"
+  DB_NAME: todos
+  DB_USER: todos
