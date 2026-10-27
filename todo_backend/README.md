@@ -1,9 +1,11 @@
-# Exercise 2.9 - The project, step 12
+# Exercise 2.10 - The project, step 13
 
 ## Task
-Create a CronJob that generates a new todo every hour to remind you to do 'Read <URL>', here <URL> is a Wikipedia article that was decided by the job randomly. It does not have to be a hyperlink, the user can copy-paste the URL from the todo.
+The project could really use logging.
 
-https://en.wikipedia.org/wiki/Special:Random responds with a redirect to a random Wikipedia page so you can ask it to provide a random article for you to read. TIP: Check location header
+Add request logging so that you can monitor every todo that is sent to the backend.
+
+Set the limit of 140 characters for todos in the backend as well. Use Postman or curl to test that too long todos are blocked by the backend, and you can see the non-allowed messages in your Grafana.
 
 ## Application
 The Todo backend is a Node.js HTTP service used by the project frontend. It provides a small JSON API for reading and creating todo items. Todo data is stored in PostgreSQL instead of in application memory. The project frontend renders URLs in todo content as clickable links.
@@ -28,9 +30,9 @@ Returns all todos ordered by their database ID:
 Creates a todo from a JSON request body:
 
 ```powershell
-curl.exe -X POST http://localhost:2345/todos `
-  -H "Content-Type: application/json" `
-  -d '{\"content\":\"Read the Kubernetes documentation\"}'
+$body = @{ content = "Read the Kubernetes documentation" } | ConvertTo-Json -Compress
+Invoke-RestMethod -Uri "http://localhost:8081/todos" `
+  -Method Post -ContentType "application/json" -Body $body
 ```
 
 The content must contain between 1 and 140 characters. A successful request returns the created todo with status `201`. Invalid JSON or content returns status `400`.
@@ -61,13 +63,56 @@ Runtime configuration is supplied by the
 
 The database password is supplied separately through the [`todo-database-secret`](./manifests/postgres-secret.yaml) Secret as `DB_PASSWORD`.
 
+## Request logging and validation
+
+Every submitted todo is written to the container log. Successfully stored
+todos use the `Todo created:` message, while invalid submissions use
+`Todo rejected:`. Todos longer than 140 characters are rejected with HTTP
+status `400` before they are stored.
+
+Test a valid todo through the project Ingress:
+
+```powershell
+$body = @{ content = "Read the Kubernetes documentation" } | ConvertTo-Json -Compress
+Invoke-RestMethod -Uri "http://localhost:8081/todos" `
+  -Method Post -ContentType "application/json" -Body $body
+```
+
+Test the backend limit with a 141-character todo:
+
+```powershell
+$tooLong = "x" * 141
+$body = @{ content = $tooLong } | ConvertTo-Json -Compress
+
+try {
+    Invoke-RestMethod -Uri "http://localhost:8081/todos" `
+      -Method Post -ContentType "application/json" -Body $body
+} catch {
+    $_.ErrorDetails.Message
+}
+```
+
+View the backend logs directly:
+
+```powershell
+kubectl logs -n project deployment/todo-backend
+```
+
+In Grafana, select the Loki datasource and use this LogQL query to find submissions:
+
+```text
+{namespace="project"}
+```
+
+The Grafana datasource is provisioned from [`monitoring/grafana-values.yaml`](../monitoring/grafana-values.yaml). The values file configures the Loki tenant header `X-Scope-OrgID: 1`; provisioned datasources cannot be edited from the Grafana UI.
+
 ## Build the image
 
 Run these commands from the `todo_backend` directory:
 
 ```powershell
-docker build -t vikikone/todo-backend:v2.8 .
-docker push vikikone/todo-backend:v2.8
+docker build -t vikikone/todo-backend:v2.10 .
+docker push vikikone/todo-backend:v2.10
 ```
 
 ## Deploy to Kubernetes

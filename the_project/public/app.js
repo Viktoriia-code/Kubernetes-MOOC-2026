@@ -34,7 +34,11 @@ form.addEventListener('submit', async (event) => {
     event.preventDefault();
     error.textContent = '';
     const content = input.value.trim();
-    if (!content || content.length > todoMaxLength) return;
+    if (!content) return;
+    if (content.length > todoMaxLength) {
+        error.textContent = `Todo content must be between 1 and ${todoMaxLength} characters`;
+        return;
+    }
 
     const response = await fetch('/todos', {
     method: 'POST',
@@ -54,7 +58,6 @@ async function loadConfiguration() {
     if (!response.ok) throw new Error('Could not load configuration');
     const config = await response.json();
     todoMaxLength = config.todoMaxLength;
-    input.maxLength = todoMaxLength;
     input.placeholder = `Enter a new todo (max ${todoMaxLength} characters)`;
 }
 

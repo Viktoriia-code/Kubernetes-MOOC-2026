@@ -90,7 +90,9 @@ const server = http.createServer(async (request, response) => {
   }
 
   try {
+    console.log(`Todo submitted: ${JSON.stringify(todo.content)}`);
     if (typeof todo.content !== 'string' || todo.content.trim().length === 0 || todo.content.length > todoMaxLength) {
+      console.warn(`Todo rejected: content must be between 1 and ${todoMaxLength} characters`);
       sendJson(response, 400, { error: `Todo content must be between 1 and ${todoMaxLength} characters` });
       return;
     }
@@ -99,6 +101,7 @@ const server = http.createServer(async (request, response) => {
       'INSERT INTO todos (content) VALUES ($1) RETURNING id, content',
       [todo.content.trim()],
     );
+    console.log(`Todo created: ${JSON.stringify(result.rows[0])}`);
     sendJson(response, 201, result.rows[0]);
   } catch (error) {
     console.error(`Failed to create todo: ${error.message}`);

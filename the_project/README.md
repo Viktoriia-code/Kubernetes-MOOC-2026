@@ -1,9 +1,11 @@
-# Exercise 2.9 - The project, step 12
+# Exercise 2.10 - The project, step 13
 
 ## Task
-Create a CronJob that generates a new todo every hour to remind you to do 'Read <URL>', here <URL> is a Wikipedia article that was decided by the job randomly. It does not have to be a hyperlink, the user can copy-paste the URL from the todo.
+The project could really use logging.
 
-https://en.wikipedia.org/wiki/Special:Random(opens in a new tab) responds with a redirect to a random Wikipedia page so you can ask it to provide a random article for you to read. TIP: Check location header
+Add request logging so that you can monitor every todo that is sent to the backend.
+
+Set the limit of 140 characters for todos in the backend as well. Use Postman or curl to test that too long todos are blocked by the backend, and you can see the non-allowed messages in your Grafana.
 
 ## What was done
 
@@ -18,8 +20,14 @@ https://en.wikipedia.org/wiki/Special:Random(opens in a new tab) responds with a
 - The database password is provided through a Kubernetes Secret.
 - The backend waits for PostgreSQL before starting its HTTP server.
 - Initial example todos are inserted only when the database table is empty.
-- An hourly CronJob creates a todo containing a randomly selected Wikipedia article URL. Wikipedia article URLs in todos are rendered as clickable links
-in the frontend.
+- An hourly CronJob creates a todo containing a randomly selected Wikipedia article URL.
+- Wikipedia article URLs in todos are rendered as clickable links in the frontend.
+- Every submitted todo is logged by the backend.
+- Todos longer than 140 characters are rejected by the backend with HTTP 400.
+- Rejected submissions are logged with `Todo rejected:` so they can be found in Loki and Grafana.
+- Grafana is configured with Prometheus and Loki datasources.
+- The Loki datasource uses the `X-Scope-OrgID: 1` tenant header.
+- Grafana datasource configuration is stored in [`monitoring/grafana-values.yaml`](../monitoring/grafana-values.yaml).
 
 The backend API is documented in
 [`todo_backend/README.md`](../todo_backend/README.md).
@@ -28,9 +36,9 @@ The backend API is documented in
 
 The Docker image is available at [`vikikone/todo-app`](https://hub.docker.com/r/vikikone/todo-app).
 
-Tag used: `vikikone/todo-app:v2.9`
+Tag used: `vikikone/todo-app:v2.10`
 
-The backend image is `vikikone/todo-backend:v2.8`.
+The backend image is `vikikone/todo-backend:v2.10`.
 
 ## Implementation steps
 
@@ -39,12 +47,12 @@ The backend image is `vikikone/todo-backend:v2.8`.
 From the `the_project` directory:
 
 ```powershell
-docker build -t vikikone/todo-app:v2.9 .
-docker push vikikone/todo-app:v2.9
+docker build -t vikikone/todo-app:v2.10 .
+docker push vikikone/todo-app:v2.10
 
 cd ..\todo_backend
-docker build -t vikikone/todo-backend:v2.8 .
-docker push vikikone/todo-backend:v2.8
+docker build -t vikikone/todo-backend:v2.10 .
+docker push vikikone/todo-backend:v2.10
 
 cd ..\the_project
 ```
@@ -67,6 +75,16 @@ kubectl rollout status deployment/todo-backend -n project
 kubectl rollout status deployment/the-project -n project
 ```
 
+For Grafana and Loki monitoring, install or upgrade Grafana with the committed
+values file:
+
+```powershell
+helm upgrade --install grafana grafana/grafana `
+  --namespace monitoring `
+  --create-namespace `
+  --values ..\monitoring\grafana-values.yaml
+```
+
 The `todo-reminder` CronJob runs at the start of every hour. To trigger it manually while testing:
 
 ```powershell
@@ -83,6 +101,18 @@ kubectl get svc,ingress -n project
 kubectl logs -n project -f deployment/the-project
 kubectl logs -n project deployment/todo-backend
 kubectl get cronjob,jobs -n project
+```
+
+To open Grafana locally:
+
+```powershell
+kubectl port-forward --namespace monitoring svc/grafana 3000:80
+```
+
+In Grafana, select **Explore**, choose **Loki**, and query rejected todos:
+
+```text
+{namespace="project"}
 ```
 
 ### 4. Access the application

@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: todo-backend
-          image: vikikone/todo-backend:v2.8
+          image: vikikone/todo-backend:v2.10
           imagePullPolicy: Always
           envFrom:
             - configMapRef:

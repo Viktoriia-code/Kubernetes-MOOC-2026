@@ -19,7 +19,7 @@ spec:
             claimName: image-cache-claim
       containers:
         - name: the-project
-          image: vikikone/todo-app:v2.9
+          image: vikikone/todo-app:v2.10
           imagePullPolicy: Always
           envFrom:
             - configMapRef:
