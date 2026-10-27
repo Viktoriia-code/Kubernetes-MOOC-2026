@@ -1,4 +1,4 @@
-# Exercise 2.8 - The project, step 11
+# Exercise 2.9 - The project, step 12
 
 ## Task
 Create a CronJob that generates a new todo every hour to remind you to do 'Read <URL>', here <URL> is a Wikipedia article that was decided by the job randomly. It does not have to be a hyperlink, the user can copy-paste the URL from the todo.
