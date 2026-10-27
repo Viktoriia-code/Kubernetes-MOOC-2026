@@ -1,12 +1,12 @@
 # Exercise 2.8 - The project, step 11
 
 ## Task
-Create a database and save the todos there. Again, the database should be defined as a stateful set with one replica.
+Create a CronJob that generates a new todo every hour to remind you to do 'Read <URL>', here <URL> is a Wikipedia article that was decided by the job randomly. It does not have to be a hyperlink, the user can copy-paste the URL from the todo.
 
-Use Secrets and/or ConfigMaps to have the backend access the database.
+https://en.wikipedia.org/wiki/Special:Random responds with a redirect to a random Wikipedia page so you can ask it to provide a random article for you to read. TIP: Check location header
 
 ## Application
-The Todo backend is a Node.js HTTP service used by the project frontend. It provides a small JSON API for reading and creating todo items. Todo data is stored in PostgreSQL instead of in application memory.
+The Todo backend is a Node.js HTTP service used by the project frontend. It provides a small JSON API for reading and creating todo items. Todo data is stored in PostgreSQL instead of in application memory. The project frontend renders URLs in todo content as clickable links.
 
 ## API
 
@@ -92,9 +92,22 @@ Check the resources:
 kubectl get deployments,statefulset,pods,pvc -n project
 kubectl get services -n project
 kubectl logs -n project deployment/todo-backend
+kubectl get cronjob,jobs -n project
 ```
 
 The backend is available inside the cluster through `todo-backend-svc.project:2345`. The project frontend uses this Service rather than calling the backend directly from outside the cluster.
+
+## Hourly Wikipedia reminder
+
+The [`todo-reminder`](./manifests/cronjob.yaml) CronJob runs at the start of every hour. It follows the redirect from Wikipedia's random article endpoint and sends a todo in the form `Read <URL>` to the backend. The backend URL and Wikipedia URL are defined in [`cronjob-configmap.yaml`](./manifests/cronjob-configmap.yaml).
+
+Create a one-off Job to test the CronJob immediately:
+
+```powershell
+kubectl create job --from=cronjob/todo-reminder todo-reminder-manual -n project
+kubectl logs -n project -f job/todo-reminder-manual
+kubectl delete job todo-reminder-manual -n project
+```
 
 ## Remove the backend resources
 

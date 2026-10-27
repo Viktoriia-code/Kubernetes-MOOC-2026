@@ -1,9 +1,9 @@
-# Exercise 2.8 - The project, step 11
+# Exercise 2.9 - The project, step 12
 
 ## Task
-Create a database and save the todos there. Again, the database should be defined as a stateful set with one replica.
+Create a CronJob that generates a new todo every hour to remind you to do 'Read <URL>', here <URL> is a Wikipedia article that was decided by the job randomly. It does not have to be a hyperlink, the user can copy-paste the URL from the todo.
 
-Use Secrets and/or ConfigMaps to have the backend access the database.
+https://en.wikipedia.org/wiki/Special:Random(opens in a new tab) responds with a redirect to a random Wikipedia page so you can ask it to provide a random article for you to read. TIP: Check location header
 
 ## What was done
 
@@ -18,6 +18,8 @@ Use Secrets and/or ConfigMaps to have the backend access the database.
 - The database password is provided through a Kubernetes Secret.
 - The backend waits for PostgreSQL before starting its HTTP server.
 - Initial example todos are inserted only when the database table is empty.
+- An hourly CronJob creates a todo containing a randomly selected Wikipedia article URL. Wikipedia article URLs in todos are rendered as clickable links
+in the frontend.
 
 The backend API is documented in
 [`todo_backend/README.md`](../todo_backend/README.md).
@@ -26,7 +28,7 @@ The backend API is documented in
 
 The Docker image is available at [`vikikone/todo-app`](https://hub.docker.com/r/vikikone/todo-app).
 
-Tag used: `vikikone/todo-app:v2.6`
+Tag used: `vikikone/todo-app:v2.9`
 
 The backend image is `vikikone/todo-backend:v2.8`.
 
@@ -37,8 +39,8 @@ The backend image is `vikikone/todo-backend:v2.8`.
 From the `the_project` directory:
 
 ```powershell
-docker build -t vikikone/todo-app:v2.6 .
-docker push vikikone/todo-app:v2.6
+docker build -t vikikone/todo-app:v2.9 .
+docker push vikikone/todo-app:v2.9
 
 cd ..\todo_backend
 docker build -t vikikone/todo-backend:v2.8 .
@@ -65,6 +67,14 @@ kubectl rollout status deployment/todo-backend -n project
 kubectl rollout status deployment/the-project -n project
 ```
 
+The `todo-reminder` CronJob runs at the start of every hour. To trigger it manually while testing:
+
+```powershell
+kubectl create job --from=cronjob/todo-reminder todo-reminder-manual -n project
+kubectl logs -n project -f job/todo-reminder-manual
+kubectl delete job todo-reminder-manual -n project
+```
+
 ### 3. Check the resources
 
 ```bash
@@ -72,6 +82,7 @@ kubectl get deployments,statefulset,pods,pvc -n project
 kubectl get svc,ingress -n project
 kubectl logs -n project -f deployment/the-project
 kubectl logs -n project deployment/todo-backend
+kubectl get cronjob,jobs -n project
 ```
 
 ### 4. Access the application

@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: todo-reminder
+  namespace: project
+spec:
+  schedule: "0 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: todo-reminder
+              image: curlimages/curl:8.10.1
+              envFrom:
+                - configMapRef:
+                    name: todo-reminder-config
+              command:
+                - sh
+                - -c
+                - |
+                  set -eu
+                  article_url="$(curl -fsS -o /dev/null -w '%{redirect_url}' "$RANDOM_WIKIPEDIA_URL")"
+                  if [ -z "$article_url" ]; then
+                    echo "Wikipedia did not return a redirect URL" >&2
+                    exit 1
+                  fi
+                  curl -fsS -X POST "$TODO_BACKEND_URL" \
+                    -H 'Content-Type: application/json' \
+                    --data "{\"content\":\"Read $article_url\"}"
