@@ -5,7 +5,7 @@ metadata:
   labels:
     app: ping-pong
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
     app: ping-pong
   ports:

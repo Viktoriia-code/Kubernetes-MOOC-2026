@@ -5,7 +5,7 @@ const port = process.env.PORT || 3000;
 const statusFile = process.env.STATUS_FILE || '/usr/src/app/files/status.txt';
 const informationFile = process.env.INFORMATION_FILE || '/usr/src/app/config/information.txt';
 const message = process.env.MESSAGE || '';
-const pingPongUrl = process.env.PINGPONG_URL || 'http://ping-pong-svc:3005/pings';
+const pingPongUrl = process.env.PINGPONG_URL || 'http://ping-pong-svc:80/pings';
 
 function getPingPongCount() {
   return new Promise((resolve, reject) => {

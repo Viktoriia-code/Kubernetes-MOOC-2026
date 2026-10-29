@@ -1,9 +1,12 @@
-# Exercise 3.1 - Pingpong GKE
+# Exercise 3.2 - Back to Ingress
 
 ## Task
 
-Deploy the Ping-pong application to Google Kubernetes Engine (GKE).
-The application must be exposed with a Kubernetes `LoadBalancer` Service.
+Deploy the "Log output" and "Ping-pong" applications into GKE and expose it with Ingress.
+
+"Ping-pong" will have to respond from /pingpong path. This may require you to rewrite parts of the code.
+
+Note that Ingress expects a service to give a successful response in the path / even if the service is mapped to some other path!
 
 ## Overview
 
@@ -44,7 +47,12 @@ The application image is built and tagged as:
 
 The application runs in a Deployment named `ping-pong`. PostgreSQL runs in a one replica StatefulSet named `postgres`.
 
-The `ping-pong-svc` Service uses the `LoadBalancer` type to expose the application through an external IP address. It forwards requests from port `80` to port `3000` in the application container.
+The `ping-pong-svc` Service uses the `NodePort` type required by the GKE
+Ingress controller. It forwards requests from port `80` to port `3000` in the
+application container. The Ingress routes `/pingpong` to this Service.
+
+The Ping-pong application also returns HTTP 200 from `/`. GKE uses `/` for
+backend health checks, while requests from users are served from `/pingpong`.
 
 PostgreSQL is accessed through the headless `postgres-svc` Service. Its StatefulSet uses a PersistentVolumeClaim to store database data.
 
@@ -52,7 +60,7 @@ PostgreSQL is accessed through the headless `postgres-svc` Service. Its Stateful
 |---|---|---|
 | Deployment | `ping-pong` | Runs the application |
 | StatefulSet | `postgres` | Runs PostgreSQL |
-| Service | `ping-pong-svc` | Exposes the application externally |
+| Service | `ping-pong-svc` | Provides the Ping-pong NodePort backend |
 | Service | `postgres-svc` | Provides internal database access |
 | ConfigMap | `ping-pong-database-config` | Stores database configuration |
 | Secret | `pingpong-secret` | Stores the database password |
@@ -81,12 +89,7 @@ gcloud services enable container.googleapis.com
 Create a cluster if you do not already have one. The following example uses a small zonal cluster in Finland:
 
 ```powershell
-gcloud container clusters create dwk-cluster `
-  --zone=europe-north1-b `
-  --cluster-version=1.36 `
-  --disk-size=32 `
-  --num-nodes=4 `
-  --machine-type=e2-small
+gcloud container clusters create dwk-cluster --zone=europe-north1-b --cluster-version=1.36 --disk-size=32 --num-nodes=4 --machine-type=e2-small
 ```
 
 Configure `kubectl` to use the cluster:
@@ -98,19 +101,19 @@ kubectl cluster-info
 
 ## 2. Build and publish the application image
 
-The Deployment references the image `gcr.io/dwk-gke-513110/ping-pong:3.1`. Replace the project ID in the commands and in [`deployment.yaml`](.\manifests\deployment.yaml) if you are using a different Google Cloud project.
+The Deployment references the image `gcr.io/dwk-gke-513110/ping-pong:3.2`. Replace the project ID in the commands and in [`deployment.yaml`](.\manifests\deployment.yaml) if you are using a different Google Cloud project.
 
 From this directory, build the image:
 
 ```powershell
-docker build -t gcr.io/dwk-gke-513110/ping-pong:3.1 .
+docker build -t gcr.io/dwk-gke-513110/ping-pong:3.2 .
 ```
 
 Configure Docker authentication for Google Container Registry and push the image:
 
 ```powershell
 gcloud auth configure-docker gcr.io
-docker push gcr.io/dwk-gke-513110/ping-pong:3.1
+docker push gcr.io/dwk-gke-513110/ping-pong:3.2
 ```
 
 Update the `image` field in [`manifests/deployment.yaml`](.\manifests\deployment.yaml) to the same image tag before deploying.
@@ -136,20 +139,29 @@ Check the created resources:
 kubectl get pods,svc,statefulset,pvc
 ```
 
-## 4. Access the application through the LoadBalancer
+## 4. Deploy the Log output application and Ingress
 
-GKE needs some time to provision the external load balancer. Watch the Service until the `EXTERNAL-IP` changes from `<pending>` to an IP address:
+From the repository root, apply the Log output manifests after the Ping-pong resources are ready:
+
+Follow the deployment instructions in the [Log output README](../log_output/README.md), then return here to test the shared Ingress.
+
+The Ingress routes `/` and `/status` to Log output and `/pingpong` to Ping-pong. GKE provisions an external address for the Ingress; this can take several minutes.
+
+## 5. Access the applications through the Ingress
+
+Get the Ingress address:
 
 ```powershell
-kubectl get service ping-pong-svc --watch
+kubectl get ingress
 ```
 
-Store the assigned IP in a PowerShell variable and call the application:
+Store the address in a PowerShell variable and call both routes:
 
 ```powershell
-$EXTERNAL_IP = kubectl get service ping-pong-svc `
+$INGRESS_IP = kubectl get ingress log-output-ingress `
   -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
-curl.exe "http://$EXTERNAL_IP/pingpong"
+curl.exe "http://$INGRESS_IP/"
+curl.exe "http://$INGRESS_IP/pingpong"
 ```
 
 The response should look similar to:
@@ -158,18 +170,16 @@ The response should look similar to:
 pong 0
 ```
 
-<img width="546" height="131" alt="Screenshot 2026-10-29 141253 confidencial" src="https://github.com/user-attachments/assets/acacd20a-7a1e-466d-b035-84f618393b5d" />
-
 Call the endpoint again to verify that the counter increases:
 
 ```powershell
-curl.exe "http://$EXTERNAL_IP/pingpong"
-curl.exe "http://$EXTERNAL_IP/pings"
+curl.exe "http://$INGRESS_IP/pingpong"
+curl.exe "http://$INGRESS_IP/status"
 ```
 
 The `/pings` request reports the current value without incrementing it.
 
-## 5. Troubleshooting
+## 6. Troubleshooting
 
 Inspect pod status and recent events:
 
@@ -185,18 +195,16 @@ View application logs:
 kubectl logs deployment/ping-pong
 ```
 
-If the Ping-pong pod cannot connect to PostgreSQL, check the StatefulSet and
-its logs:
+If the Ping-pong pod cannot connect to PostgreSQL, check the StatefulSet and its logs:
 
 ```powershell
 kubectl get pods -l app=postgres
 kubectl logs statefulset/postgres
 ```
 
-## 6. Avoid unnecessary GKE costs
+## 7. Avoid unnecessary GKE costs
 
-A `LoadBalancer` Service and the GKE cluster can incur charges. Delete the
-cluster when it is no longer needed:
+The GKE Ingress and cluster can incur charges. Delete the cluster when it is no longer needed:
 
 ```powershell
 gcloud container clusters delete dwk-cluster --zone=europe-north1-b
@@ -204,7 +212,8 @@ gcloud container clusters delete dwk-cluster --zone=europe-north1-b
 
 Remove the pushed images:
 ```powershell
-gcloud container images list-tags gcr.io/dwk-gke-513110/ping-pong --format="value(digest)" | ForEach-Object { gcloud container images delete "gcr.io/dwk-gke-513110/ping-pong@sha256:$_" --quiet --force-delete-tags }
+gcloud container images delete gcr.io/dwk-gke-513110/log-output --force-delete-tags --quiet
+gcloud container images delete gcr.io/dwk-gke-513110/ping-pong --force-delete-tags --quiet
 ```
 
 Check that there is no images:
@@ -212,6 +221,4 @@ Check that there is no images:
 gcloud container images list-tags gcr.io/dwk-gke-513110/ping-pong
 ```
 
-Deleting the cluster also deletes the deployed Kubernetes resources. When
-continuing the exercise, recreate the cluster, fetch its credentials, and
-apply the manifests again.
+Deleting the cluster also deletes the deployed Kubernetes resources. When continuing the exercise, recreate the cluster, fetch its credentials, and apply the manifests again.

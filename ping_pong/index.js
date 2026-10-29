@@ -61,9 +61,15 @@ async function getCount(increment) {
 const server = http.createServer(async (request, response) => {
   const requestPath = new URL(request.url, `http://${request.headers.host}`).pathname;
 
-  if (request.method !== 'GET' || !['/pingpong', '/pings'].includes(requestPath)) {
+  if (request.method !== 'GET' || !['/', '/pingpong', '/pings'].includes(requestPath)) {
     response.writeHead(404);
     response.end('Not found');
+    return;
+  }
+
+  if (requestPath === '/') {
+    response.writeHead(200, { 'Content-Type': 'text/plain' });
+    response.end('OK');
     return;
   }
 

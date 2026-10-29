@@ -1,15 +1,32 @@
-# Exercise 2.5 - Documentation and ConfigMaps
+# Exercise 3.2 - Back to Ingress
 
 ## Task
-Use the official Kubernetes documentation for this exercise. The following
 
-https://kubernetes.io/docs/concepts/configuration/configmap/ and
-https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/
-should contain everything you need.
+Deploy the "Log output" and "Ping-pong" applications into GKE and expose it with Ingress.
 
-Create a ConfigMap for the "Log output" application. The ConfigMap should define one file information.txt and one env variable MESSAGE.
+"Ping-pong" will have to respond from /pingpong path. This may require you to rewrite parts of the code.
 
-The app should map the file as a volume, set the environment variable and print the content of those in addition to the usual output:
+Note that Ingress expects a service to give a successful response in the path / even if the service is mapped to some other path!
+
+## Application
+
+The Log output application consists of two containers in one Pod:
+
+* `log-output-writer` generates a UUID at startup and appends a timestamp and the UUID to `/usr/src/app/files/status.txt` every five seconds.
+* `log-output-reader` reads the shared file and serves the contents through `GET /` and `GET /status`.
+
+Both containers share an `emptyDir` volume mounted at `/usr/src/app/files`. The reader listens on port `3000` inside the container. The Kubernetes Service exposes that container through port `2345`.
+
+When the reader serves `/` or `/status`, it also requests `http://ping-pong-svc.exercises:80/pings`. The `/pings` endpoint returns the current Ping-pong counter without incrementing it.
+
+The Ingress routes:
+
+* `/` and `/status` to the Log output application
+* `/pingpong` to the Ping-pong application
+
+GKE Ingress health checks request `/` from each backend. The Ping-pong application therefore returns HTTP 200 from `/`, while `/pingpong` remains the counter endpoint used by the exercise.
+
+The response includes the ConfigMap values, the generated status file, and the Ping-pong count:
 
 ```text
 file content: this text is from file
@@ -18,185 +35,228 @@ env variable: MESSAGE=hello world
 Ping / Pongs: 3
 ```
 
-## Application
+## Kubernetes resources
 
-The application consists of two containers:
+The manifests in [`manifests/`](.\manifests) create:
 
-* **`log-output-writer`** generates a UUID at startup and appends a timestamp and the UUID to `/usr/src/app/files/status.txt` every five seconds.
-* **`log-output-reader`** reads the shared file and returns its contents through HTTP GET requests to `/` and `/status`.
+* `log-output-dep`, a one-replica Deployment with writer and reader containers
+* `log-output-svc`, an internal ClusterIP Service on port `2345`
+* `log-output-config`, a ConfigMap containing `information.txt` and `MESSAGE`
+* `log-output-ingress`, the GKE Ingress resource
 
-The writer runs `generator.js`, while the reader runs `server.js`.
+The Ping-pong manifests must also be deployed in the `exercises` namespace.
+The Ping-pong Service is a `NodePort` backend for the Ingress and exposes Service port `80`.
 
-Both containers share an `emptyDir` mounted at `/usr/src/app/files` for the status file. The volume is local to the Log output pod and is not shared with Ping-pong.
-
-The reader listens on port `3000` inside the container.
-
-Both (log_output and ping_pong) applications run in the `exercises` namespace. When the reader serves `/` or `/status`, it reads `status.txt` and makes an HTTP GET request to the Ping-pong Service at `http://ping-pong-svc.exercises:3005/pings`. The `/pings` endpoint returns the current counter without incrementing it, while the browser-facing `/pingpong` endpoint increments the counter.
-
-The `log-output-config` ConfigMap provides the reader with the `information.txt` file and the `MESSAGE` environment variable. The response includes both values before the timestamp and Ping-pong count.
-
-## Technologies
-
-* Node.js
-* Docker
-* Kubernetes
-* k3d
-* Ingress
-* kubens
-
-## Request Flow
-
-Requests to the application follow this path:
+## Request flow
 
 ```text
-http://localhost:8081/
+http://INGRESS_IP/
         |
         v
-Ingress controller, port 80
+GKE Ingress
         |
         v
-log-output-ingress
+log-output-svc:2345
         |
         v
-log-output-svc, port 2345
+log-output-reader:3000
+        |
+        +--> ping-pong-svc:80/pings
+
+http://INGRESS_IP/pingpong
         |
         v
-Pod, container port 3000
+GKE Ingress
         |
         v
-log-output-reader
+ping-pong-svc:80
         |
         v
-Log output status file
-        |
-        +--> http://ping-pong-svc.exercises:3005/pings
+ping-pong:3000
 ```
 
-## Project Structure
+## Project structure
 
 ```text
 Kubernetes-MOOC-2026/
 └── log_output/
     ├── manifests/
+    │   ├── configmap.yaml
     │   ├── deployment.yaml
     │   ├── service.yaml
     │   └── ingress.yaml
-    └── ...
+    ├── Dockerfile
+    ├── generator.js
+    ├── server.js
+    └── package.json
 ```
-
-* `generator.js` generates the UUID and writes timestamped entries to the file.
-* `server.js` reads the file and returns its contents through HTTP.
-* `Dockerfile` builds the Docker image.
-* `deployment.yaml` defines the two containers and their shared volume.
-* `service.yaml` defines the internal ClusterIP Service.
-* `ingress.yaml` defines the HTTP routing rules.
 
 ## Requirements
 
-- Docker
-- Node.js and npm (only needed for running the application locally)
-- `kubectl`
-- k3d or another Kubernetes cluster with an Ingress controller
+* A Google Cloud project with billing enabled or available credits
+* Google Cloud SDK (`gcloud`)
+* `kubectl`
+* Docker
+* A GKE cluster with an Ingress controller
 
-## Implementation steps
+## 1. Configure Google Cloud
 
-### 1. Build the Docker Image
-
-Build the application image with a new tag from the `log_output` directory:
-
-```powershell
-docker build -t vikikone/log-output:v2.5 .
-```
-
-If the image needs to be uploaded to Docker Hub, push it:
+Log in and select the Google Cloud project used for the exercise:
 
 ```powershell
-docker push vikikone/log-output:v2.5
+gcloud auth login
+gcloud config set project dwk-gke-513110
+gcloud services enable container.googleapis.com
 ```
 
-### 2. Deploy the Application
-
-Create the namespace with kubectl:
+Create a cluster if you do not already have one:
 
 ```powershell
-kubectl create namespace exercises
+gcloud container clusters create dwk-cluster --zone=europe-north1-b --cluster-version=1.36 --disk-size=32 --num-nodes=4 --machine-type=e2-small
 ```
 
-Then apply the Kubernetes manifests:
+Configure `kubectl` to use the cluster:
+
+```powershell
+gcloud container clusters get-credentials dwk-cluster --zone=europe-north1-b
+kubectl cluster-info
+```
+
+If `kubectl` reports that the GKE authentication plugin is missing, install the [`gke-gcloud-auth-plugin`](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl#install_plugin) and fetch the cluster credentials again.
+
+
+## 2. Deploy Ping-pong
+
+Deploy Ping-pong before Log output because the reader requests the Ping-pong
+Service when serving `/` and `/status`.
+
+Follow the deployment instructions in the [Ping-pong README](../ping_pong/README.md), then return here to deploy Log output and the shared Ingress.
+
+## 3. Build and publish the Log output image
+
+From this directory, build the image:
+
+```powershell
+docker build -t gcr.io/dwk-gke-513110/log-output:v3.2 .
+```
+
+Push it to Docker Hub if the image is not already available there:
+
+```powershell
+docker push gcr.io/dwk-gke-513110/log-output:v3.2
+```
+
+If you use a different registry or tag, update the image fields for both
+containers in [`manifests/deployment.yaml`](.\manifests\deployment.yaml).
+
+## 4. Deploy Log output and the Ingress
+
+From the repository root, apply the Log output manifests to the same namespace:
 
 ```powershell
 kubectl apply -f .\manifests
+kubectl rollout status deployment/log-output-dep
 ```
 
-Check the Deployment and Pods:
+Check all resources:
 
 ```powershell
-kubectl get deployments -n exercises
-kubectl get pods -n exercises
+kubectl get pods,svc,deployments,ingress
 ```
 
-The Deployment is named `log-output-dep`.
+GKE needs some time to provision the external Ingress address. Watch it until the `ADDRESS` column is populated:
 
-### 3. Verify Persisted Data
+```powershell
+kubectl get ingress log-output-ingress --watch
+```
 
-The application uses two containers in the same Pod:
+## 5. Test the applications through Ingress
 
-- **Writer:** generates data and writes it to files.
-- **Reader:** reads the stored files.
+Get the external Ingress address:
 
-Both containers mount the same `emptyDir` so they can access the status file.
+```powershell
+kubectl get ingress log-output-ingress
+```
+
+Test Log output:
+
+```powershell
+curl.exe "http://$INGRESS_IP/"
+curl.exe "http://$INGRESS_IP/status"
+```
+
+Test Ping-pong:
+
+```powershell
+curl.exe "http://$INGRESS_IP/pingpong"
+```
+
+The Ping-pong counter should increase between requests. The Log output response should include the current counter without incrementing it.
+
+## 6. Verify the shared status file
 
 Read the status file from the reader container:
 
 ```powershell
-kubectl exec -n exercises deployment/log-output-dep -c log-output-reader -- cat /usr/src/app/files/status.txt
+kubectl exec deployment/log-output-dep -c log-output-reader -- cat /usr/src/app/files/status.txt
 ```
 
-Run the command again after a short wait. A new timestamped line should appear.
+Run the command again after a few seconds. A new timestamped line should appear, while the UUID remains the same for the lifetime of the writer container.
 
-List the files in the shared storage directory:
+List the shared volume:
 
 ```powershell
-kubectl exec -n exercises deployment/log-output-dep -c log-output-reader -- ls -l /usr/src/app/files
+kubectl exec deployment/log-output-dep -c log-output-reader -- ls -l /usr/src/app/files
 ```
 
-### 4. Test the application
+## 7. Troubleshooting
 
-Send an HTTP GET request to the root endpoint:
+Inspect the Ingress, Services, Pods, and recent events:
 
 ```powershell
-curl.exe http://localhost:8081/
+kubectl describe ingress log-output-ingress
+kubectl get svc
+kubectl get pods
+kubectl get events --sort-by=.lastTimestamp
 ```
 
-Test the status endpoint:
+View Log output logs:
 
 ```powershell
-curl.exe http://localhost:8081/status
+kubectl logs deployment/log-output-dep -c log-output-reader
+kubectl logs deployment/log-output-dep -c log-output-writer
 ```
 
-Both endpoints should return the contents of the shared file, including timestamps and the UUID generated at startup.
+If the reader cannot contact Ping-pong, check the Ping-pong Service and Pod:
 
-The response also includes:
-
-```text
-file content: this text is from file
-env variable: MESSAGE=hello world
+```powershell
+kubectl get endpoints ping-pong-svc
+kubectl get pods -l app=ping-pong
+kubectl logs deployment/ping-pong
 ```
 
-The timestamp should change every five seconds, while the UUID should remain the same during the lifetime of the writer container.
+## 8. Stop and restart Log output
 
-### 5. Stop and restart the application
+To stop Log output while keeping its Kubernetes resources:
 
-To stop the application while keeping the Kubernetes resources, scale the
-Deployment down to zero replicas:
-
-```bash
-kubectl scale deployment/log-output-dep --replicas=0 -n exercises
+```powershell
+kubectl scale deployment/log-output-dep --replicas=0
 ```
 
-To start the application again, scale it back to one replica:
+Restart it with:
 
-```bash
-kubectl scale deployment/log-output-dep --replicas=1 -n exercises
-kubectl rollout status deployment/log-output-dep -n exercises
+```powershell
+kubectl scale deployment/log-output-dep --replicas=1
+kubectl rollout status deployment/log-output-dep
 ```
+
+## 9. Avoid unnecessary GKE costs
+
+The GKE Ingress and cluster can incur charges. Delete the cluster when it is
+no longer needed:
+
+```powershell
+gcloud container clusters delete dwk-cluster --zone=europe-north1-b
+```
+
+Deleting the cluster also deletes the deployed Kubernetes resources. When continuing the exercise, recreate the cluster, fetch its credentials, and apply the manifests again.
