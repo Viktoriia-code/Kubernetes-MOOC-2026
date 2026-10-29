@@ -158,6 +158,8 @@ The response should look similar to:
 pong 0
 ```
 
+<img width="546" height="131" alt="Screenshot 2026-10-29 141253 confidencial" src="https://github.com/user-attachments/assets/acacd20a-7a1e-466d-b035-84f618393b5d" />
+
 Call the endpoint again to verify that the counter increases:
 
 ```powershell
