@@ -1,12 +1,16 @@
-# Exercise 3.3 - To the Gateway
+# Exercise 3.4 - Rewritten routing
 
 ## Task
 
-Replace the Ingress with Gateway API in the "Log output" and "Ping-pong" applications. See [here](https://gateway-api.sigs.k8s.io/guides/user-guides/http-routing/) for more about HTTP routing.
+After the previous exercise, your ping-pong app now most likely needs to respond to the URL /pingpong to work in the cluster setup.
+
+It would be nice if we were not forced to reflect the cluster-level URL structures in the applications, and instead, the app itself could provide the behavior in the root path /. Thanks to the flexibility of the Gateway API, this can be easily done by route rewriting.
+
+Make this change to your ping-pong app and to the HTTP route!
 
 ## Overview
 
-The Ping-pong application responds to HTTP GET requests at `/pingpong` by incrementing a counter stored in PostgreSQL. The `/pings` endpoint returns the current counter without incrementing it, allowing the Log output application to read the value.
+The Ping-pong application responds to HTTP GET requests at `/` by incrementing a counter stored in PostgreSQL. The `/pings` endpoint returns the current counter without incrementing it, allowing the Log output application to read the value.
 
 PostgreSQL runs in a StatefulSet with a PersistentVolumeClaim, allowing the counter to survive Ping-pong Pod restarts.
 
@@ -23,7 +27,7 @@ PostgreSQL runs in a StatefulSet with a PersistentVolumeClaim, allowing the coun
 
 The application listens on port `3000` inside the container.
 
-The `GET /pingpong` endpoint increments the counter and returns the current value:
+The `GET /` endpoint increments the counter and returns the current value:
 
 ```text
 pong 0
@@ -44,10 +48,11 @@ The application image is built and tagged as:
 The application runs in a Deployment named `ping-pong`. PostgreSQL runs in a one replica StatefulSet named `postgres`.
 
 The `ping-pong-svc` Service uses the `ClusterIP` type required by Gateway API.
-It forwards requests from port `80` to port `3000` in the application container. The HTTPRoute routes `/pingpong` to this Service.
+It forwards requests from port `80` to port `3000` in the application container.
+The HTTPRoute routes `/pingpong` to this Service and rewrites the path to `/`.
 
-The Ping-pong application also returns HTTP 200 from `/`. GKE uses `/` for
-backend health checks, while requests from users are served from `/pingpong`.
+The Gateway API rewrite allows the application to use `/` while users access
+the counter through `/pingpong`.
 
 PostgreSQL is accessed through the headless `postgres-svc` Service. Its StatefulSet uses a PersistentVolumeClaim to store database data.
 
@@ -96,19 +101,19 @@ kubectl cluster-info
 
 ## 2. Build and publish the application image
 
-The Deployment references the image `gcr.io/dwk-gke-513110/ping-pong:3.3`. Replace the project ID in the commands and in [`deployment.yaml`](.\manifests\deployment.yaml) if you are using a different Google Cloud project.
+The Deployment references the image `gcr.io/dwk-gke-513110/ping-pong:3.4`. Replace the project ID in the commands and in [`deployment.yaml`](.\manifests\deployment.yaml) if you are using a different Google Cloud project.
 
 From this directory, build the image:
 
 ```powershell
-docker build -t gcr.io/dwk-gke-513110/ping-pong:3.3 .
+docker build -t gcr.io/dwk-gke-513110/ping-pong:3.4 .
 ```
 
 Configure Docker authentication for Google Container Registry and push the image:
 
 ```powershell
 gcloud auth configure-docker gcr.io
-docker push gcr.io/dwk-gke-513110/ping-pong:3.3
+docker push gcr.io/dwk-gke-513110/ping-pong:3.4
 ```
 
 Update the `image` field in [`manifests/deployment.yaml`](.\manifests\deployment.yaml) to the same image tag before deploying.
@@ -173,8 +178,26 @@ gcloud container clusters delete dwk-cluster --zone=europe-north1-b
 
 Remove the pushed images:
 ```powershell
-gcloud container images delete gcr.io/dwk-gke-513110/log-output --force-delete-tags --quiet
-gcloud container images delete gcr.io/dwk-gke-513110/ping-pong --force-delete-tags --quiet
+$repositories = @(
+    "gcr.io/dwk-gke-513110/log-output",
+    "gcr.io/dwk-gke-513110/ping-pong"
+)
+
+foreach ($repository in $repositories) {
+    $tags = gcloud container images list-tags $repository --format=json | ConvertFrom-Json
+
+    foreach ($image in $tags) {
+        $digest = $image.digest
+
+        if ($digest -notlike "sha256:*") {
+            $digest = "sha256:$digest"
+        }
+
+        Write-Host "Deleting $repository@$digest"
+
+        gcloud container images delete "$repository@$digest" --force-delete-tags --quiet
+    }
+}
 ```
 
 Check that there is no images:

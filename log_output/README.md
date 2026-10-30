@@ -1,8 +1,12 @@
-# Exercise 3.3 - To the Gateway
+# Exercise 3.4 - Rewritten routing
 
 ## Task
 
-Replace the Ingress with Gateway API in the "Log output" and "Ping-pong" applications. See [here](https://gateway-api.sigs.k8s.io/guides/user-guides/http-routing/) for more about HTTP routing.
+After the previous exercise, your ping-pong app now most likely needs to respond to the URL /pingpong to work in the cluster setup.
+
+It would be nice if we were not forced to reflect the cluster-level URL structures in the applications, and instead, the app itself could provide the behavior in the root path /. Thanks to the flexibility of the Gateway API, this can be easily done by route rewriting.
+
+Make this change to your ping-pong app and to the HTTP route!
 
 ## Application
 
@@ -15,12 +19,12 @@ Both containers share an `emptyDir` volume mounted at `/usr/src/app/files`. The 
 
 When the reader serves `/` or `/status`, it also requests `http://ping-pong-svc.exercises:80/pings`. The `/pings` endpoint returns the current Ping-pong counter without incrementing it.
 
-The HTTPRoute routes:
+The HTTPRoute routes and rewrites:
 
 * `/` and `/status` to the Log output application
-* `/pingpong` to the Ping-pong application
+* `/pingpong` to the Ping-pong application as `/`
 
-The Ping-pong application returns HTTP 200 from `/`, while `/pingpong` remains the counter endpoint used by the exercise.
+The Gateway rewrites `/pingpong` to `/`, so the Ping-pong application only needs to implement its counter endpoint at `/`.
 
 The response includes the ConfigMap values, the generated status file, and the Ping-pong count:
 
@@ -106,6 +110,15 @@ In order to use the Gateway API, run the command in order to enable it to the cl
 gcloud container clusters update dwk-cluster --location=europe-north1-b --gateway-api=standard
 ```
 
+Verify the configuration:
+```powershell
+gcloud container clusters describe dwk-cluster --zone=europe-north1-b --project=dwk-gke-513110 --format="yaml(networkConfig.gatewayApiConfig)"
+```
+Expected:
+```
+gatewayApiConfig:
+  channel: CHANNEL_STANDARD
+```
 ## 2. Deploy Ping-pong
 
 Deploy Ping-pong before Log output because the reader requests the Ping-pong
@@ -118,13 +131,13 @@ Follow the deployment instructions in the [Ping-pong README](../ping_pong/README
 From this directory, build the image:
 
 ```powershell
-docker build -t gcr.io/dwk-gke-513110/log-output:v3.3 .
+docker build -t gcr.io/dwk-gke-513110/log-output:v3.4 .
 ```
 
 Push it to Docker Hub if the image is not already available there:
 
 ```powershell
-docker push gcr.io/dwk-gke-513110/log-output:v3.3
+docker push gcr.io/dwk-gke-513110/log-output:v3.4
 ```
 
 If you use a different registry or tag, update the image fields for both
