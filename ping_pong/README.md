@@ -1,12 +1,8 @@
-# Exercise 3.2 - Back to Ingress
+# Exercise 3.3 - To the Gateway
 
 ## Task
 
-Deploy the "Log output" and "Ping-pong" applications into GKE and expose it with Ingress.
-
-"Ping-pong" will have to respond from /pingpong path. This may require you to rewrite parts of the code.
-
-Note that Ingress expects a service to give a successful response in the path / even if the service is mapped to some other path!
+Replace the Ingress with Gateway API in the "Log output" and "Ping-pong" applications. See [here](https://gateway-api.sigs.k8s.io/guides/user-guides/http-routing/) for more about HTTP routing.
 
 ## Overview
 
@@ -41,15 +37,14 @@ Each request increments the counter by one. The `GET /pings` endpoint returns th
 
 The application image is built and tagged as:
 
-`gcr.io/dwk-gke-513110/ping-pong:3.1`
+`gcr.io/dwk-gke-513110/ping-pong:3.3`
 
 ## Kubernetes Resources
 
 The application runs in a Deployment named `ping-pong`. PostgreSQL runs in a one replica StatefulSet named `postgres`.
 
-The `ping-pong-svc` Service uses the `NodePort` type required by the GKE
-Ingress controller. It forwards requests from port `80` to port `3000` in the
-application container. The Ingress routes `/pingpong` to this Service.
+The `ping-pong-svc` Service uses the `ClusterIP` type required by Gateway API.
+It forwards requests from port `80` to port `3000` in the application container. The HTTPRoute routes `/pingpong` to this Service.
 
 The Ping-pong application also returns HTTP 200 from `/`. GKE uses `/` for
 backend health checks, while requests from users are served from `/pingpong`.
@@ -60,7 +55,7 @@ PostgreSQL is accessed through the headless `postgres-svc` Service. Its Stateful
 |---|---|---|
 | Deployment | `ping-pong` | Runs the application |
 | StatefulSet | `postgres` | Runs PostgreSQL |
-| Service | `ping-pong-svc` | Provides the Ping-pong NodePort backend |
+| Service | `ping-pong-svc` | Provides the Ping-pong ClusterIP backend |
 | Service | `postgres-svc` | Provides internal database access |
 | ConfigMap | `ping-pong-database-config` | Stores database configuration |
 | Secret | `pingpong-secret` | Stores the database password |
@@ -101,19 +96,19 @@ kubectl cluster-info
 
 ## 2. Build and publish the application image
 
-The Deployment references the image `gcr.io/dwk-gke-513110/ping-pong:3.2`. Replace the project ID in the commands and in [`deployment.yaml`](.\manifests\deployment.yaml) if you are using a different Google Cloud project.
+The Deployment references the image `gcr.io/dwk-gke-513110/ping-pong:3.3`. Replace the project ID in the commands and in [`deployment.yaml`](.\manifests\deployment.yaml) if you are using a different Google Cloud project.
 
 From this directory, build the image:
 
 ```powershell
-docker build -t gcr.io/dwk-gke-513110/ping-pong:3.2 .
+docker build -t gcr.io/dwk-gke-513110/ping-pong:3.3 .
 ```
 
 Configure Docker authentication for Google Container Registry and push the image:
 
 ```powershell
 gcloud auth configure-docker gcr.io
-docker push gcr.io/dwk-gke-513110/ping-pong:3.2
+docker push gcr.io/dwk-gke-513110/ping-pong:3.3
 ```
 
 Update the `image` field in [`manifests/deployment.yaml`](.\manifests\deployment.yaml) to the same image tag before deploying.
@@ -139,47 +134,13 @@ Check the created resources:
 kubectl get pods,svc,statefulset,pvc
 ```
 
-## 4. Deploy the Log output application and Ingress
+## 4. Deploy the Log output application and Gateway API resources
 
-From the repository root, apply the Log output manifests after the Ping-pong resources are ready:
+From this point, follow the [Log output README](../log_output/README.md) to
+deploy the shared Gateway API resources and access both applications through
+the Gateway.
 
-Follow the deployment instructions in the [Log output README](../log_output/README.md), then return here to test the shared Ingress.
-
-The Ingress routes `/` and `/status` to Log output and `/pingpong` to Ping-pong. GKE provisions an external address for the Ingress; this can take several minutes.
-
-## 5. Access the applications through the Ingress
-
-Get the Ingress address:
-
-```powershell
-kubectl get ingress
-```
-
-Store the address in a PowerShell variable and call both routes:
-
-```powershell
-$INGRESS_IP = kubectl get ingress log-output-ingress `
-  -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
-curl.exe "http://$INGRESS_IP/"
-curl.exe "http://$INGRESS_IP/pingpong"
-```
-
-The response should look similar to:
-
-```text
-pong 0
-```
-
-Call the endpoint again to verify that the counter increases:
-
-```powershell
-curl.exe "http://$INGRESS_IP/pingpong"
-curl.exe "http://$INGRESS_IP/status"
-```
-
-The `/pings` request reports the current value without incrementing it.
-
-## 6. Troubleshooting
+## 5. Troubleshooting
 
 Inspect pod status and recent events:
 
@@ -202,9 +163,9 @@ kubectl get pods -l app=postgres
 kubectl logs statefulset/postgres
 ```
 
-## 7. Avoid unnecessary GKE costs
+## 6. Avoid unnecessary GKE costs
 
-The GKE Ingress and cluster can incur charges. Delete the cluster when it is no longer needed:
+The GKE Gateway and cluster can incur charges. Delete the cluster when it is no longer needed:
 
 ```powershell
 gcloud container clusters delete dwk-cluster --zone=europe-north1-b
