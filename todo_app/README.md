@@ -209,6 +209,8 @@ Configure these as environment secrets in the `GKE_PROJECT` GitHub environment:
 
 The workflow uses Workload Identity Federation, so no long-lived Google Cloud credentials are stored in GitHub.
 
+<img width="587" height="832" alt="image" src="https://github.com/user-attachments/assets/49bb4730-e96e-4950-83c4-0a9ae0f53ed7" />
+
 ## Remove the application resources
 
 ```bash
