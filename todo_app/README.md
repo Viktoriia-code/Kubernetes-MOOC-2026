@@ -5,6 +5,11 @@ Improve the deployment so that each branch creates a separate environment. The m
 
 Your solution may assume that branches are named so that they are valid namespace names.
 
+<img width="1267" height="157" alt="image" src="https://github.com/user-attachments/assets/d5b9110b-dc20-4324-aaec-584fd1162d9f" />
+
+<img width="450" height="40" alt="image" src="https://github.com/user-attachments/assets/ffcc2b02-b2d9-4370-a51c-535369521260" />
+
+
 ## Application
 
 The project is a todo application with a frontend and a separate backend.
