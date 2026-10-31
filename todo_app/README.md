@@ -1,7 +1,7 @@
-# Exercise 3.5 - The project, step 14
+# Exercise 3.6 - The project, step 15
 
 ## Task
-Configure the project to use Kustomize, and deploy it to Google Kubernetes Engine.
+Setup automatic deployment for the project as well.
 
 ## Application
 
@@ -196,6 +196,18 @@ kubectl rollout status deployment/the-project -n project
 
 The cached image remains available after the pod is recreated because it is
 stored in the persistent volume.
+
+## Automatic deployment
+
+The [GitHub Actions workflow](../.github/workflows/main.yaml) builds and pushes both project images, updates the Kustomizations with the commit-specific image tags, and deploys the backend and frontend to GKE on every push.
+
+Configure these as environment secrets in the `GKE_PROJECT` GitHub environment:
+
+- `GKE_PROJECT`: Google Cloud project ID
+- `SERVICE_ACCOUNT`: GitHub Actions service account email
+- `WORKLOAD_IDENTITY_PROVIDER`: Workload Identity Provider resource name
+
+The workflow uses Workload Identity Federation, so no long-lived Google Cloud credentials are stored in GitHub.
 
 ## Remove the application resources
 

@@ -1,0 +1,86 @@
+name: Release project
+
+on:
+  push:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_ID: ${{ secrets.GKE_PROJECT }}
+  GKE_CLUSTER: dwk-cluster
+  GKE_ZONE: europe-north1-b
+  REGISTRY: gcr.io
+  APP_IMAGE: todo-app
+  BACKEND_IMAGE: todo-backend
+  BRANCH: ${{ github.ref_name }}
+
+jobs:
+  build-publish-deploy:
+    name: Build, publish and deploy
+    runs-on: ubuntu-latest
+    environment: GKE_PROJECT
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Configure Docker authentication
+        run: gcloud --quiet auth configure-docker "$REGISTRY"
+
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER }}
+          project_id: ${{ env.PROJECT_ID }}
+          location: ${{ env.GKE_ZONE }}
+
+      - name: Form image names
+        run: |
+          echo "APP_IMAGE_TAG=$REGISTRY/$PROJECT_ID/$APP_IMAGE:$BRANCH-$GITHUB_SHA" >> "$GITHUB_ENV"
+          echo "BACKEND_IMAGE_TAG=$REGISTRY/$PROJECT_ID/$BACKEND_IMAGE:$BRANCH-$GITHUB_SHA" >> "$GITHUB_ENV"
+
+      - name: Build and publish frontend
+        working-directory: todo_app
+        run: |
+          docker build --tag "$APP_IMAGE_TAG" .
+          docker push "$APP_IMAGE_TAG"
+
+      - name: Build and publish backend
+        working-directory: todo_backend
+        run: |
+          docker build --tag "$BACKEND_IMAGE_TAG" .
+          docker push "$BACKEND_IMAGE_TAG"
+
+      - name: Set up Kustomize
+        uses: imranismail/setup-kustomize@v3
+
+      - name: Set frontend image
+        working-directory: todo_app
+        run: kustomize edit set image PROJECT/IMAGE="$APP_IMAGE_TAG"
+
+      - name: Set backend image
+        working-directory: todo_backend
+        run: kustomize edit set image PROJECT/IMAGE="$BACKEND_IMAGE_TAG"
+
+      - name: Deploy backend
+        run: kubectl apply -k todo_backend
+
+      - name: Deploy frontend
+        run: kubectl apply -k todo_app
+
+      - name: Verify rollout
+        run: |
+          kubectl rollout status statefulset/postgres --namespace project
+          kubectl rollout status deployment/todo-backend --namespace project
+          kubectl rollout status deployment/todo-app --namespace project
