@@ -1,7 +1,9 @@
-# Exercise 3.6 - The project, step 15
+# Exercise 3.7 - The project, step 16
 
 ## Task
-Setup automatic deployment for the project as well.
+Improve the deployment so that each branch creates a separate environment. The main branch should still be deployed in the namespace project.
+
+Your solution may assume that branches are named so that they are valid namespace names.
 
 ## Application
 
@@ -199,7 +201,7 @@ stored in the persistent volume.
 
 ## Automatic deployment
 
-The [GitHub Actions workflow](../.github/workflows/main.yaml) builds and pushes both project images, updates the Kustomizations with the commit-specific image tags, and deploys the backend and frontend to GKE on every push.
+The [GitHub Actions workflow](../.github/workflows/main.yaml) builds and pushes both project images, updates the Kustomizations with the commit-specific image tags, and deploys the backend and frontend to GKE on every push. The `main` branch uses the `project` namespace; each other branch is deployed to a namespace named after the branch.
 
 Configure these as environment secrets in the `GKE_PROJECT` GitHub environment:
 

@@ -14,6 +14,7 @@ env:
   REGISTRY: gcr.io
   APP_IMAGE: todo-app
   BACKEND_IMAGE: todo-backend
+  SERVICE: dwk-environments
   BRANCH: ${{ github.ref_name }}
 
 jobs:
@@ -73,6 +74,25 @@ jobs:
         working-directory: todo_backend
         run: kustomize edit set image PROJECT/IMAGE="$BACKEND_IMAGE_TAG"
 
+      - name: Select deployment namespace
+        run: |
+          if [ "$GITHUB_REF_NAME" = "main" ]; then
+            echo "DEPLOY_NAMESPACE=project" >> "$GITHUB_ENV"
+          else
+            echo "DEPLOY_NAMESPACE=$GITHUB_REF_NAME" >> "$GITHUB_ENV"
+          fi
+
+      - name: Configure backend namespace
+        run: |
+          kubectl create namespace "$DEPLOY_NAMESPACE" || true
+          kubectl config set-context --current --namespace="$DEPLOY_NAMESPACE"
+          kustomize edit set namespace "$DEPLOY_NAMESPACE"
+        working-directory: todo_backend
+
+      - name: Configure frontend namespace
+        run: kustomize edit set namespace "$DEPLOY_NAMESPACE"
+        working-directory: todo_app
+
       - name: Deploy backend
         run: kubectl apply -k todo_backend
 
@@ -81,6 +101,6 @@ jobs:
 
       - name: Verify rollout
         run: |
-          kubectl rollout status statefulset/postgres --namespace project
-          kubectl rollout status deployment/todo-backend --namespace project
-          kubectl rollout status deployment/todo-app --namespace project
+          kubectl rollout status statefulset/postgres --namespace "$DEPLOY_NAMESPACE"
+          kubectl rollout status deployment/todo-backend --namespace "$DEPLOY_NAMESPACE"
+          kubectl rollout status deployment/todo-app --namespace "$DEPLOY_NAMESPACE"
