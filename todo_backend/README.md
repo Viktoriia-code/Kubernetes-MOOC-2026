@@ -1,11 +1,7 @@
-# Exercise 2.10 - The project, step 13
+# Exercise 3.5 - The project, step 14
 
 ## Task
-The project could really use logging.
-
-Add request logging so that you can monitor every todo that is sent to the backend.
-
-Set the limit of 140 characters for todos in the backend as well. Use Postman or curl to test that too long todos are blocked by the backend, and you can see the non-allowed messages in your Grafana.
+Configure the project to use Kustomize, and deploy it to Google Kubernetes Engine.
 
 ## Application
 The Todo backend is a Node.js HTTP service used by the project frontend. It provides a small JSON API for reading and creating todo items. Todo data is stored in PostgreSQL instead of in application memory. The project frontend renders URLs in todo content as clickable links.
@@ -106,16 +102,26 @@ In Grafana, select the Loki datasource and use this LogQL query to find submissi
 
 The Grafana datasource is provisioned from [`monitoring/grafana-values.yaml`](../monitoring/grafana-values.yaml). The values file configures the Loki tenant header `X-Scope-OrgID: 1`; provisioned datasources cannot be edited from the Grafana UI.
 
+## Deploy to Google Kubernetes Engine
+
+The backend runs inside the `project` namespace and is reached by the frontend through the internal `todo-backend-svc.project:2345` Service. Follow the Google Cloud and cluster setup instructions in the [project README](../todo_app/README.md#deploy-to-google-kubernetes-engine) before deploying the backend.
+
+The PostgreSQL StatefulSet uses a dynamic `local-path` storage class in the committed manifests. On GKE, change it to a storage class available in your cluster, such as `standard-rwo`, before applying the Kustomization.
+
 ## Build the image
 
-Run these commands from the `todo_backend` directory:
+From the `todo_backend` directory, build the image:
 
 ```powershell
-docker build -t vikikone/todo-backend:v2.10 .
-docker push vikikone/todo-backend:v2.10
+docker build -t gcr.io/dwk-gke-513110/todo-backend:3.5 .
+```
+Configure Docker authentication for Google Container Registry and push the image:
+```powershell
+gcloud auth configure-docker gcr.io
+docker push gcr.io/dwk-gke-513110/todo-backend:3.5
 ```
 
-## Deploy to Kubernetes
+## Deploy the backend to GKE
 
 Create the project namespace if it does not exist:
 
@@ -123,12 +129,22 @@ Create the project namespace if it does not exist:
 kubectl create namespace project
 ```
 
-Apply all backend, database, and Service manifests:
+If the namespace already exists, continue with the Kustomize command.
+
+Apply all backend, database, and Service resources with Kustomize:
 
 ```powershell
-kubectl apply -f .\manifests
+kubectl apply -k .
 kubectl rollout status statefulset/postgres -n project
 kubectl rollout status deployment/todo-backend -n project
+```
+
+The frontend can now be deployed from the `the_project` directory:
+
+```powershell
+cd ..\todo_app
+kubectl apply -k .
+kubectl rollout status deployment/todo-app -n project
 ```
 
 Check the resources:
@@ -157,5 +173,5 @@ kubectl delete job todo-reminder-manual -n project
 ## Remove the backend resources
 
 ```powershell
-kubectl delete -f .\manifests -n project
+kubectl delete -k . -n project
 ```

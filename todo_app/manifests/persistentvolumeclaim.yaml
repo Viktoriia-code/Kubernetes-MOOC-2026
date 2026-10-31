@@ -4,7 +4,7 @@ metadata:
   name: image-cache-claim
   namespace: project
 spec:
-  storageClassName: image-cache
+  storageClassName: standard-rwo
   accessModes:
     - ReadWriteOnce
   resources:
