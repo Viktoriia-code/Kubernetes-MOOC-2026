@@ -1,19 +1,14 @@
-# Exercise 3.7 - The project, step 16
+# Exercise 3.8 - The project, step 17
 
 ## Task
-Improve the deployment so that each branch creates a separate environment. The main branch should still be deployed in the namespace project.
+Create a new workflow so that deleting a branch deletes the environment.
 
-Your solution may assume that branches are named so that they are valid namespace names.
+## Exercise 3.8 implementation
 
-## Exercise 3.7 implementation
+[cleanup workflow](../.github/workflows/delete-environment.yaml) deletes the
+branch namespace when a non-`main` branch is deleted. The `project` namespace is protected.
 
-The implementation is in the
-[../.github/workflows/main.yaml](../.github/workflows/main.yaml). It builds and deploys both images (`todo-app` and `todo-backend`), uses `project` for `main`, and creates a separate
-namespace for every other branch. The workflow also updates the Kustomizations
-and verifies the deployments. The screenshots above show the successful result.
-<img width="1267" height="auto" alt="image" src="https://github.com/user-attachments/assets/d5b9110b-dc20-4324-aaec-584fd1162d9f" />
-
-<img width="450" height="auto" alt="image" src="https://github.com/user-attachments/assets/ffcc2b02-b2d9-4370-a51c-535369521260" />
+The screenshots above show the successful result.
 
 ## Application
 
@@ -222,6 +217,15 @@ Configure these as environment secrets in the `GKE_PROJECT` GitHub environment:
 The workflow uses Workload Identity Federation, so no long-lived Google Cloud credentials are stored in GitHub.
 
 <img width="587" height="832" alt="image" src="https://github.com/user-attachments/assets/49bb4730-e96e-4950-83c4-0a9ae0f53ed7" />
+
+The implementation is in the
+[../.github/workflows/main.yaml](../.github/workflows/main.yaml). It builds and deploys both images (`todo-app` and `todo-backend`), uses `project` for `main`, and creates a separate namespace for every other branch. The workflow also updates the Kustomizations and verifies the deployments.
+
+The screenshots above show the successful result.
+
+<img width="1267" height="auto" alt="image" src="https://github.com/user-attachments/assets/d5b9110b-dc20-4324-aaec-584fd1162d9f" />
+
+<img width="450" height="auto" alt="image" src="https://github.com/user-attachments/assets/ffcc2b02-b2d9-4370-a51c-535369521260" />
 
 ## Remove the application resources
 
