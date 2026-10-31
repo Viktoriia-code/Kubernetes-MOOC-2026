@@ -10,6 +10,9 @@ branch namespace when a non-`main` branch is deleted. The `project` namespace is
 
 The screenshots above show the successful result.
 
+<img width="650" height="auto" alt="image" src="https://github.com/user-attachments/assets/878d6eec-c10e-49e3-b4f8-da874f894d3c" />
+<img width="774" height="585" alt="Screenshot 2026-10-31 184450" src="https://github.com/user-attachments/assets/ddb62c35-da74-47e8-8d84-5fa6870069bc" />
+
 ## Application
 
 The project is a todo application with a frontend and a separate backend.
