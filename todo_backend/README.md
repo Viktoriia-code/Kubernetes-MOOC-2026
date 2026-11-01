@@ -1,7 +1,117 @@
-# Exercise 3.5 - The project, step 14
+# Exercise 3.10 - The project, step 18
 
 ## Task
-Configure the project to use Kustomize, and deploy it to Google Kubernetes Engine.
+Create now a CronJob that makes a backup of your todo database (once per 24 hours) and saves it to [Google Object Storage](https://cloud.google.com/storage).
+
+
+## Daily database backups
+
+The [`todo-db-backup`](./manifests/backup-cronjob.yaml) CronJob creates one backup every 24 hours at 02:00 UTC. The backup flow is:
+
+1. Kubernetes starts a temporary backup Pod.
+2. The Pod reads the PostgreSQL connection settings from [`configmap.yaml`](./manifests/configmap.yaml) and the database password from [`postgres-secret.yaml`](./manifests/postgres-secret.yaml).
+3. `pg_dump` creates a PostgreSQL custom-format dump in the Pod's temporary filesystem.
+4. `gcloud storage cp` uploads the dump to Google Cloud Storage.
+5. The Pod exits, and Kubernetes keeps the Job status for troubleshooting.
+
+The bucket name is stored in the non-secret [`manifests/configmap.yaml`](./manifests/configmap.yaml). The Google service-account key is stored only in the Kubernetes Secret named `storage-sa-key`; it is never included in the repository.
+
+### 1. Create a Cloud Storage bucket
+
+Choose values for these placeholders:
+
+```powershell
+$PROJECT_ID = "YOUR_PROJECT_ID"
+$BUCKET = "YOUR_UNIQUE_BUCKET_NAME"
+$REGION = "europe-north1"
+
+gcloud config set project $PROJECT_ID
+gcloud storage buckets create "gs://$BUCKET" --location=$REGION
+```
+
+The bucket name must be globally unique. Use the same bucket name in the following steps and in the `GCS_BUCKET` entry in [`manifests/configmap.yaml`](./manifests/configmap.yaml).
+
+### 2. Create a restricted Google service account
+
+This account only needs to create objects in the backup bucket. It does not need permission to delete or overwrite unrelated cloud resources:
+
+```powershell
+$SERVICE_ACCOUNT = "todo-storage-sa"
+
+gcloud iam service-accounts create $SERVICE_ACCOUNT --display-name="Todo backup storage SA"
+
+gcloud storage buckets add-iam-policy-binding "gs://$BUCKET" --member="serviceAccount:$SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com" --role="roles/storage.objectCreator"
+
+gcloud storage buckets add-iam-policy-binding "gs://$BUCKET" --member="serviceAccount:$SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com" --role="roles/storage.objectViewer"
+```
+
+### 3. Create the Kubernetes Secret locally
+
+Create the `project` namespace if it does not already exist:
+
+``` powershell
+kubectl create namespace project --dry-run=client -o yaml | kubectl apply -f -
+```
+
+For this exercise, authenticate the backup Pod with a service-account key. Create the key locally and immediately create the Secret in the `project` namespace:
+
+```powershell
+gcloud iam service-accounts keys create key.json --iam-account="$SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com"
+
+kubectl create secret generic storage-sa-key --from-file=key.json=key.json --namespace project
+```
+
+Verify the secret:
+
+```powershell
+kubectl get secret storage-sa-key -n project
+```
+
+The CronJob mounts this Secret at `/var/run/secrets/storage/key.json`, and the `GOOGLE_APPLICATION_CREDENTIALS` environment variable tells `gcloud` which file to use. Never commit `key.json`, paste it into GitHub, or add it to a ConfigMap. The repository's `.gitignore` also excludes this filename.
+
+### 4. Configure and deploy the CronJob
+
+Edit [`configmap.yaml`](./manifests/configmap.yaml) and replace `dwk-todo-backups` in `GCS_BUCKET` with the bucket created in step 1. Then deploy from the `todo_backend` directory:
+
+```powershell
+kubectl apply -k .
+kubectl get cronjob todo-db-backup -n project
+```
+
+The CronJob uses `concurrencyPolicy: Forbid`, so a second backup cannot start while an earlier backup is still running. It also retains the last three successful and failed Job records.
+
+### 5. Run a backup immediately
+
+Do not wait for the scheduled time when testing. Create a one off Job from the CronJob and inspect its logs:
+
+``` powershell
+kubectl create job --from=cronjob/todo-db-backup todo-db-backup-manual -n project
+kubectl logs -n project -f job/todo-db-backup-manual
+```
+
+The Job succeeds only after both `pg_dump` and the upload complete. Check the Job status:
+
+``` powershell
+kubectl get jobs -n project
+```
+
+A successful Job shows `Complete` and `1/1` completions.
+
+Confirm that the object exists:
+
+``` powershell
+gcloud storage ls "gs://$BUCKET/"
+```
+
+The uploaded object has a name similar to `todos-YYYYMMDDTHHMMSSZ.dump`.
+
+After testing, remove the one off Job. The scheduled CronJob remains:
+
+``` powershell
+kubectl delete job todo-db-backup-manual -n project
+```
+
+The backup object in Cloud Storage is not deleted when the Kubernetes Job is deleted.
 
 ## Application
 The Todo backend is a Node.js HTTP service used by the project frontend. It provides a small JSON API for reading and creating todo items. Todo data is stored in PostgreSQL instead of in application memory. The project frontend renders URLs in todo content as clickable links.

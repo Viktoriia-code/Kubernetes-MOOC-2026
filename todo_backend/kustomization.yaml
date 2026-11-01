@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - manifests/configmap.yaml
   - manifests/cronjob-configmap.yaml
+  - manifests/backup-cronjob.yaml
   - manifests/cronjob.yaml
   - manifests/deployment.yaml
   - manifests/postgres-secret.yaml
