@@ -3,7 +3,6 @@
 ## Task
 Create now a CronJob that makes a backup of your todo database (once per 24 hours) and saves it to [Google Object Storage](https://cloud.google.com/storage).
 
-
 ## Daily database backups
 
 The [`todo-db-backup`](./manifests/backup-cronjob.yaml) CronJob creates one backup every 24 hours at 02:00 UTC. The backup flow is:
@@ -104,6 +103,9 @@ gcloud storage ls "gs://$BUCKET/"
 ```
 
 The uploaded object has a name similar to `todos-YYYYMMDDTHHMMSSZ.dump`.
+
+<img width="852" height="241" alt="image" src="https://github.com/user-attachments/assets/9601f973-8c09-486a-8fb9-aa29a066a3c0" />
+<img width="1545" height="557" alt="image" src="https://github.com/user-attachments/assets/e6884775-0f10-44c0-aae8-e12e7b50d30c" />
 
 After testing, remove the one off Job. The scheduled CronJob remains:
 
