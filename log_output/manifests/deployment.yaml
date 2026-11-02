@@ -32,6 +32,12 @@ spec:
               value: http://ping-pong-svc:80/pings
           ports:
             - containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /status
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
           volumeMounts:
             - name: log-status
               mountPath: /usr/src/app/files

@@ -43,3 +43,7 @@
 - [3.10.](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.10/todo_backend)
 - [3.11.](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.11/todo_backend)
 - [3.12.](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.12/todo_backend)
+
+### Chapter 5
+- [4.1. Ping-pong](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.1/ping_pong)
+- [4.1. Log output](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.1/log_output)

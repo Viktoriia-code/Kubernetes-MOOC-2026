@@ -1,12 +1,49 @@
-# Exercise 3.4 - Rewritten routing
+# Exercise 4.1 - Readines probe
 
 ## Task
+> Create a ReadinessProbe for the Ping-pong application. It should be ready when it has a connection to the database.
+> 
+> And another ReadinessProbe for Log output application. It should be ready when it can receive data from the Ping-pong application.
+> 
+> Test that it works by applying everything but the database statefulset. The output of kubectl get po should look like this before the database is available:
+> 
+> ```text
+> NAME                             READY   STATUS    RESTARTS   AGE
+> logoutput-dep-7f49547cf4-ttj4f   1/2     Running   0          21s
+> pingpong-dep-9b698d6fb-jdgq9     0/1     Running   0          21s
+> ```
+> 
+> Adding the database should automatically move the READY states to 2/2 and 1/1 for Log output and Ping-pong respectively.
 
-After the previous exercise, your ping-pong app now most likely needs to respond to the URL /pingpong to work in the cluster setup.
+## Readiness probe implementation
 
-It would be nice if we were not forced to reflect the cluster-level URL structures in the applications, and instead, the app itself could provide the behavior in the root path /. Thanks to the flexibility of the Gateway API, this can be easily done by route rewriting.
+Readiness probes were added to the Kubernetes Deployment manifests:
 
-Make this change to your ping-pong app and to the HTTP route!
+- [`ping_pong/manifests/deployment.yaml`](./manifests/deployment.yaml) checks `/pings` on the Ping-pong container. The endpoint succeeds only when PostgreSQL is available.
+
+The following configuration was added to the Ping-pong container:
+
+```yaml
+readinessProbe:
+  httpGet:
+    path: /pings
+    port: 3000
+  initialDelaySeconds: 10
+  periodSeconds: 5
+```
+
+As a result, Kubernetes adds the Ping-pong pod to the Service endpoints only after PostgreSQL is available.
+
+After PostgreSQL is available, check the Ping-pong readiness status:
+
+```powershell
+kubectl get pods
+kubectl describe pod <pod-name>
+kubectl get endpoints ping-pong-svc
+```
+
+The Ping-pong pod should show `1/1` in the `READY` column, and
+`ping-pong-svc` should have an endpoint. Screenshots of these results are added below:
 
 ## Overview
 
@@ -41,7 +78,7 @@ Each request increments the counter by one. The `GET /pings` endpoint returns th
 
 The application image is built and tagged as:
 
-`gcr.io/dwk-gke-513110/ping-pong:3.3`
+`gcr.io/dwk-gke-513110/ping-pong:4.1`
 
 ## Kubernetes Resources
 
@@ -67,7 +104,9 @@ PostgreSQL is accessed through the headless `postgres-svc` Service. Its Stateful
 | PersistentVolumeClaim | Created by the StatefulSet | Stores PostgreSQL data |
 
 ## Implementation
-## 1. Configure Google Cloud
+
+<details>
+<summary>1. Configure Google Cloud</summary>
 
 Create an account and a project `dwk-gke` on the Google Cloud.
 Install Google Cloud SDK and gke-gcloud-auth-plugin.
@@ -98,8 +137,10 @@ Configure `kubectl` to use the cluster:
 gcloud container clusters get-credentials dwk-cluster --zone=europe-north1-b
 kubectl cluster-info
 ```
+</details>
 
-## 2. Build and publish the application image
+<details>
+<summary>2. Build and publish the application image</summary>
 
 The Deployment references the image `gcr.io/dwk-gke-513110/ping-pong:3.4`. Replace the project ID in the commands and in [`deployment.yaml`](.\manifests\deployment.yaml) if you are using a different Google Cloud project.
 
@@ -117,8 +158,10 @@ docker push gcr.io/dwk-gke-513110/ping-pong:3.4
 ```
 
 Update the `image` field in [`manifests/deployment.yaml`](.\manifests\deployment.yaml) to the same image tag before deploying.
+</details>
 
-## 3. Deploy to GKE
+<details>
+<summary>3. Deploy to GKE</summary>
 
 Apply all manifests:
 
@@ -133,19 +176,28 @@ kubectl rollout status statefulset/postgres
 kubectl rollout status deployment/ping-pong
 ```
 
+Check the readiness state:
+
+```powershell
+kubectl get pods
+```
+
 Check the created resources:
 
 ```powershell
 kubectl get pods,svc,statefulset,pvc
 ```
+</details>
 
-## 4. Deploy the Log output application and Gateway API resources
+<details>
+<summary>4. Deploy the Log output application and Gateway API resources</summary>
 
 From this point, follow the [Log output README](../log_output/README.md) to
-deploy the shared Gateway API resources and access both applications through
-the Gateway.
+deploy the shared Gateway API resources and access both applications through the Gateway.
+</details>
 
-## 5. Troubleshooting
+<details>
+<summary>5. Troubleshooting</summary>
 
 Inspect pod status and recent events:
 
@@ -167,8 +219,10 @@ If the Ping-pong pod cannot connect to PostgreSQL, check the StatefulSet and its
 kubectl get pods -l app=postgres
 kubectl logs statefulset/postgres
 ```
+</details>
 
-## 6. Avoid unnecessary GKE costs
+<details>
+<summary>6. Avoid unnecessary GKE costs</summary>
 
 The GKE Gateway and cluster can incur charges. Delete the cluster when it is no longer needed:
 
@@ -206,3 +260,4 @@ gcloud container images list-tags gcr.io/dwk-gke-513110/ping-pong
 ```
 
 Deleting the cluster also deletes the deployed Kubernetes resources. When continuing the exercise, recreate the cluster, fetch its credentials, and apply the manifests again.
+</details>

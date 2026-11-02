@@ -1,12 +1,44 @@
-# Exercise 3.4 - Rewritten routing
+# Exercise 4.1 - Readines probe
 
 ## Task
+> Create a ReadinessProbe for the Ping-pong application. It should be ready when it has a connection to the database.
+> 
+> And another ReadinessProbe for Log output application. It should be ready when it can receive data from the Ping-pong application.
+> 
+> Test that it works by applying everything but the database statefulset. The output of kubectl get po should look like this before the database is available:
+> 
+> ```text
+> NAME                             READY   STATUS    RESTARTS   AGE
+> logoutput-dep-7f49547cf4-ttj4f   1/2     Running   0          21s
+> pingpong-dep-9b698d6fb-jdgq9     0/1     Running   0          21s
+> ```
+> 
+> Adding the database should automatically move the READY states to 2/2 and 1/1 for Log output and Ping-pong respectively.
 
-After the previous exercise, your ping-pong app now most likely needs to respond to the URL /pingpong to work in the cluster setup.
+## Readiness probe implementation
 
-It would be nice if we were not forced to reflect the cluster-level URL structures in the applications, and instead, the app itself could provide the behavior in the root path /. Thanks to the flexibility of the Gateway API, this can be easily done by route rewriting.
+The reader container uses `/status` as its readiness probe. The probe succeeds only when the shared files can be read and Ping-pong responds successfully. This keeps the Log output pod out of Service endpoints until both dependencies are available.
 
-Make this change to your ping-pong app and to the HTTP route!
+The following configuration was added to the reader container in[`manifests/deployment.yaml`](./manifests/deployment.yaml):
+
+```yaml
+readinessProbe:
+  httpGet:
+    path: /status
+    port: 3000
+  initialDelaySeconds: 10
+  periodSeconds: 5
+```
+
+After Ping-pong and PostgreSQL are available, check the Log output readiness status:
+
+```powershell
+kubectl get pods
+kubectl describe pod <pod-name>
+kubectl get endpoints log-output-svc
+```
+
+The Log output pod should show `2/2` in the `READY` column, and `log-output-svc` should have an endpoint. Screenshots of these results below:
 
 ## Application
 
