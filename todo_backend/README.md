@@ -22,7 +22,7 @@ The frontend and backend use small requests because they are lightweight Node.js
 ```powershell
 kubectl top pods -n project
 kubectl top nodes
-kubectl describe node <node-name> | sed -n '/Allocated resources/,/^$/p'
+kubectl describe node <node-name> | Select-String -Pattern "Non-terminated Pods|Allocated resources" -Context 0,20
 ```
 
 ## Application
