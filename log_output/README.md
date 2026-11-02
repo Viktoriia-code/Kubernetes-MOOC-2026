@@ -40,6 +40,9 @@ kubectl get endpoints log-output-svc
 
 The Log output pod should show `2/2` in the `READY` column, and `log-output-svc` should have an endpoint. Screenshots of these results below:
 
+<img width="896" height="306" alt="image" src="https://github.com/user-attachments/assets/cc58675b-a467-4488-a382-91f8889747da" />
+<img width="763" height="67" alt="image" src="https://github.com/user-attachments/assets/4c1097ba-3f4c-4154-a298-dd4c76786ca0" />
+
 ## Application
 
 The Log output application consists of two containers in one Pod:
