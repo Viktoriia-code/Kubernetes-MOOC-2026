@@ -46,6 +46,7 @@ The Ping-pong pod should show `1/1` in the `READY` column, and
 `ping-pong-svc` should have an endpoint. Screenshots of these results are added below:
 
 <img width="854" height="289" alt="image" src="https://github.com/user-attachments/assets/bfc1f4e4-11e2-4428-b2be-cdbc54c62c01" />
+<img width="747" height="70" alt="image" src="https://github.com/user-attachments/assets/f616e75b-80f6-41d4-a6dd-40f20e980741" />
 
 ## Overview
 
