@@ -163,13 +163,13 @@ Follow the deployment instructions in the [Ping-pong README](../ping_pong/README
 From this directory, build the image:
 
 ```powershell
-docker build -t gcr.io/dwk-gke-513110/log-output:v3.4 .
+docker build -t gcr.io/dwk-gke-513110/log-output:v4.1 .
 ```
 
 Push it to Docker Hub if the image is not already available there:
 
 ```powershell
-docker push gcr.io/dwk-gke-513110/log-output:v3.4
+docker push gcr.io/dwk-gke-513110/log-output:v4.1
 ```
 
 If you use a different registry or tag, update the image fields for both
