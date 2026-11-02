@@ -1,31 +1,42 @@
-# Exercise 3.11 - The project, step 19
+# Exercise 3.12 - The project, step 20
 
 ## Task
-> Set sensible resource requests and limits for the project. The exact values are not important. Just test what works. You may find the command kubectl top pods useful.
+> GKE includes monitoring systems already so we can just enable the monitoring.
+>
+> Read the documentation for Kubernetes Engine Monitoring [here](https://cloud.google.com/monitoring/kubernetes-engine). Find out how to find the application logs for the project in GKE.
+>
+> Add to your repository a picture of the logs when a new todo is created.
 
-## Resource requests and limits
+## GKE application logs
 
-Each project container defines CPU and memory requests and limits. A request is the amount of resource Kubernetes reserves for scheduling. A limit is the maximum resource the container may use.
-
-CPU values use millicores: `100m` equals one tenth of a CPU core. Memory values use mebibytes: `128Mi` is 128 MiB of memory. CPU usage above the limit is throttled, while a container that exceeds its memory limit may be terminated. Requests are intentionally lower than limits so normal workloads can use additional capacity when it is available.
-
-| Workload | CPU request | Memory request | CPU limit | Memory limit |
-|---|---:|---:|---:|---:|
-| `todo-app` | 50m | 64Mi | 250m | 256Mi |
-| `todo-backend` | 50m | 64Mi | 250m | 256Mi |
-| `postgres` | 100m | 128Mi | 500m | 512Mi |
-| `todo-reminder` CronJob | 10m | 16Mi | 50m | 64Mi |
-| `todo-db-backup` CronJob | 100m | 128Mi | 500m | 512Mi |
-
-The frontend and backend use small requests because they are lightweight Node.js services. PostgreSQL and the backup job receive more memory and CPU for database operations. The reminder job has the smallest values because it only performs a short HTTP request. These values are starting points and can be adjusted after checking actual usage:
+The monitoring and logging services provided by GKE were used to find the application logs. The backend service was forwarded locally and a new todo was created:
 
 ```powershell
-kubectl top pods -n project
-kubectl top nodes
-kubectl describe node <node-name> | Select-String -Pattern "Non-terminated Pods|Allocated resources" -Context 0,20
+kubectl port-forward service/todo-backend-svc 8081:2345 -n project
 ```
 
-<img width="966" height="557" alt="image" src="https://github.com/user-attachments/assets/12c34dc1-e722-45da-9883-3635a0737753" />
+In another PowerShell window:
+
+```powershell
+$body = @{ content = "Check GKE application logs" } | ConvertTo-Json -Compress
+Invoke-RestMethod -Uri "http://localhost:8081/todos" `
+  -Method Post -ContentType "application/json" -Body $body
+```
+
+**Google Cloud Console > Logging > Logs Explorer** was then opened and the logs were filtered with:
+
+```text
+resource.type="k8s_container"
+resource.labels.namespace_name="project"
+resource.labels.container_name="todo-backend"
+textPayload:"Todo created:"
+```
+
+The log entry confirmed that the todo was created successfully:
+
+```text
+Todo created: {"id":4,"content":"Check GKE application logs"}
+```
 
 ## Application
 The Todo backend is a Node.js HTTP service used by the project frontend. It provides a small JSON API for reading and creating todo items. Todo data is stored in PostgreSQL instead of in application memory. The project frontend renders URLs in todo content as clickable links.
