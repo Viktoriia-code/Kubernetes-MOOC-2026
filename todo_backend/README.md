@@ -25,6 +25,8 @@ kubectl top nodes
 kubectl describe node <node-name> | Select-String -Pattern "Non-terminated Pods|Allocated resources" -Context 0,20
 ```
 
+<img width="966" height="557" alt="image" src="https://github.com/user-attachments/assets/12c34dc1-e722-45da-9883-3635a0737753" />
+
 ## Application
 The Todo backend is a Node.js HTTP service used by the project frontend. It provides a small JSON API for reading and creating todo items. Todo data is stored in PostgreSQL instead of in application memory. The project frontend renders URLs in todo content as clickable links.
 
