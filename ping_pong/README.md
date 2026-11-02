@@ -45,6 +45,8 @@ kubectl get endpoints ping-pong-svc
 The Ping-pong pod should show `1/1` in the `READY` column, and
 `ping-pong-svc` should have an endpoint. Screenshots of these results are added below:
 
+<img width="854" height="289" alt="image" src="https://github.com/user-attachments/assets/bfc1f4e4-11e2-4428-b2be-cdbc54c62c01" />
+
 ## Overview
 
 The Ping-pong application responds to HTTP GET requests at `/` by incrementing a counter stored in PostgreSQL. The `/pings` endpoint returns the current counter without incrementing it, allowing the Log output application to read the value.
