@@ -17,6 +17,13 @@ spec:
           containers:
             - name: todo-reminder
               image: curlimages/curl:8.10.1
+              resources:
+                requests:
+                  cpu: "10m"
+                  memory: "16Mi"
+                limits:
+                  cpu: "50m"
+                  memory: "64Mi"
               envFrom:
                 - configMapRef:
                     name: todo-reminder-config
