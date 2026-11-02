@@ -12,16 +12,18 @@
 The monitoring and logging services provided by GKE were used to find the application logs. The backend service was forwarded locally and a new todo was created:
 
 ```powershell
-kubectl port-forward service/todo-backend-svc 8081:2345 -n project
+kubectl port-forward service/todo-backend-svc 8082:2345 -n project
 ```
 
 In another PowerShell window:
 
 ```powershell
 $body = @{ content = "Check GKE application logs" } | ConvertTo-Json -Compress
-Invoke-RestMethod -Uri "http://localhost:8081/todos" `
+Invoke-RestMethod -Uri "http://localhost:8082/todos" `
   -Method Post -ContentType "application/json" -Body $body
 ```
+
+<img width="962" height="212" alt="image" src="https://github.com/user-attachments/assets/38899bcc-1572-49c6-9cf0-ca2bdc957553" />
 
 **Google Cloud Console > Logging > Logs Explorer** was then opened and the logs were filtered with:
 
@@ -35,8 +37,9 @@ textPayload:"Todo created:"
 The log entry confirmed that the todo was created successfully:
 
 ```text
-Todo created: {"id":4,"content":"Check GKE application logs"}
+Todo created: {"id":5,"content":"Check GKE application logs"}
 ```
+<img width="1550" height="765" alt="image" src="https://github.com/user-attachments/assets/2b9c8408-db6e-482e-816b-d3ec825d7cb1" />
 
 ## Application
 The Todo backend is a Node.js HTTP service used by the project frontend. It provides a small JSON API for reading and creating todo items. Todo data is stored in PostgreSQL instead of in application memory. The project frontend renders URLs in todo content as clickable links.
