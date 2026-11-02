@@ -45,5 +45,7 @@
 - [3.12.](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.12/todo_backend)
 
 ### Chapter 5
-- [4.1. Ping-pong](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.1/ping_pong)
-- [4.1. Log output](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.1/log_output)
+| | | |
+|---|---|---|
+| [4.1.](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.1) | Readiness probe | [Ping-pong](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.1/ping_pong) + [Log output](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.1/log_output) |
+| 4.2 | The project, step 21 | - |

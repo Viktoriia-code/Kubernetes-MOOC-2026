@@ -147,14 +147,14 @@ The Deployment references the image `gcr.io/dwk-gke-513110/ping-pong:3.4`. Repla
 From this directory, build the image:
 
 ```powershell
-docker build -t gcr.io/dwk-gke-513110/ping-pong:3.4 .
+docker build -t gcr.io/dwk-gke-513110/ping-pong:4.1 .
 ```
 
 Configure Docker authentication for Google Container Registry and push the image:
 
 ```powershell
 gcloud auth configure-docker gcr.io
-docker push gcr.io/dwk-gke-513110/ping-pong:3.4
+docker push gcr.io/dwk-gke-513110/ping-pong:4.1
 ```
 
 Update the `image` field in [`manifests/deployment.yaml`](.\manifests\deployment.yaml) to the same image tag before deploying.
