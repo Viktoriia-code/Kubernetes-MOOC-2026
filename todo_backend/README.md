@@ -176,4 +176,44 @@ The bucket name must be globally unique. Use the same bucket name in the followi
 ```powershell
 kubectl delete -k . -n project
 ```
+
+#### Avoid unnecessary GKE costs
+
+The GKE Gateway and cluster can incur charges. Delete the cluster when it is no longer needed:
+
+```powershell
+gcloud container clusters delete dwk-cluster --zone=europe-north1-b
+```
+
+Remove the pushed images:
+```powershell
+$repositories = @(
+    "gcr.io/dwk-gke-513110/todo-app",
+    "gcr.io/dwk-gke-513110/todo-backend"
+)
+
+foreach ($repository in $repositories) {
+    $tags = gcloud container images list-tags $repository --format=json | ConvertFrom-Json
+
+    foreach ($image in $tags) {
+        $digest = $image.digest
+
+        if ($digest -notlike "sha256:*") {
+            $digest = "sha256:$digest"
+        }
+
+        Write-Host "Deleting $repository@$digest"
+
+        gcloud container images delete "$repository@$digest" --force-delete-tags --quiet
+    }
+}
+```
+
+Check that there is no images:
+```powershell
+gcloud container images list-tags gcr.io/dwk-gke-513110/todo-app
+gcloud container images list-tags gcr.io/dwk-gke-513110/todo-backend
+```
+
+Deleting the cluster also deletes the deployed Kubernetes resources. When continuing the exercise, recreate the cluster, fetch its credentials, and apply the manifests again.
 </details>
