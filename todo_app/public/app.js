@@ -56,9 +56,14 @@ form.addEventListener('submit', async (event) => {
 });
 
 breakButton.addEventListener('click', async () => {
-    const response = await fetch('/break', { method: 'POST' });
-    if (!response.ok) {
-        error.textContent = 'Could not break the application';
+    try {
+        const response = await fetch('/break', { method: 'POST' });
+        if (!response.ok) {
+            throw new Error('Could not break the application');
+        }
+        window.location.assign('/');
+    } catch (requestError) {
+        error.textContent = requestError.message;
     }
 });
 

@@ -9,4 +9,4 @@ resources:
 images:
   - name: PROJECT/IMAGE
     newName: gcr.io/dwk-gke-513110/todo-app
-    newTag: "3.5"
+    newTag: "4.2"

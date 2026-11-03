@@ -68,13 +68,18 @@ const contentTypes = {
 const staticFiles = {
   '/': 'index.html',
   '/styles.css': 'styles.css',
+  '/failure.css': 'failure.css',
   '/app.js': 'app.js',
 };
 
 async function sendStatic(response, fileName) {
+  return sendStaticWithStatus(response, fileName, 200);
+}
+
+async function sendStaticWithStatus(response, fileName, status) {
   const filePath = path.join(publicDirectory, fileName);
   const content = await fs.readFile(filePath);
-  response.writeHead(200, {
+  response.writeHead(status, {
     'Content-Type': contentTypes[path.extname(fileName)] || 'application/octet-stream',
   });
   response.end(content);
@@ -107,6 +112,11 @@ const server = http.createServer(async (request, response) => {
       isHealthy = false;
       response.writeHead(200, { 'Content-Type': 'application/json' });
       response.end(JSON.stringify({ status: 'unhealthy' }));
+      return;
+    }
+
+    if (request.url === '/' && request.method === 'GET' && !isHealthy) {
+      await sendStaticWithStatus(response, 'failure.html', 503);
       return;
     }
 

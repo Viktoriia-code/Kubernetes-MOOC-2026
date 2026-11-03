@@ -26,7 +26,7 @@ livenessProbe:
     port: 3001
 ```
 
-After deploying the project, click **Break the app** in the frontend. The frontend's liveness probe starts returning `500`, Kubernetes restarts the pod, and the application becomes healthy again:
+After deploying the project, click **Break the app** in the frontend. The frontend marks itself unhealthy, and the next page request is served by the backend as a **System Failure** page. Its liveness probe returns `500`, so Kubernetes restarts the pod. After the restart, a page reload shows the application again:
 
 ```powershell
 kubectl get pods -n project --watch
