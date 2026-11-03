@@ -35,6 +35,8 @@ kubectl logs -n project deployment/todo-app
 ```
 
 The frontend pod should return to `1/1` in the `READY` column after the restart. Screenshots of the broken state and the recovered pod:
+<img width="850" height="272" alt="Screenshot 2026-11-04 002900" src="https://github.com/user-attachments/assets/da4c0863-5158-4fda-9271-33bc1eb0c95c" />
+<img width="740" height="142" alt="image" src="https://github.com/user-attachments/assets/07922b7f-3448-4211-873c-8e1175fd37b5" />
 
 # Exercise 3.9 - DBaaS vs DIY
 
