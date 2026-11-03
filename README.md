@@ -31,18 +31,92 @@
 - [2.10.](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/2.10/todo_backend)
 
 ### Chapter 4
-- [3.1.](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.1/ping_pong)
-- [3.2.](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.2/log_output)
-- [3.3.](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.3/log_output)
-- [3.4.](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.4/log_output)
-- [3.5.](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.5/todo_app)
-- [3.6.](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.6/todo_app)
-- [3.7.](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.7/todo_app)
-- [3.8.](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.8/todo_app)
-- [3.9.](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.9/todo_app)
-- [3.10.](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.10/todo_backend)
-- [3.11.](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.11/todo_backend)
-- [3.12.](https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.12/todo_backend)
+<table>
+  <tr>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.1">3.1.</a></td>
+    <td>Pingpong GKE</td>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.1/ping_pong">Ping pong</a></td>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.2">3.2.</a></td>
+    <td>Back to Ingress</td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.2/ping_pong">Ping pong</a> + 
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.2/log_output">Log output</a>
+    </td>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.3">3.3.</a></td>
+    <td>To the Gateway</td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.3/log_output">Log output</a>
+    </td>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.4">3.4.</a></td>
+    <td>Rewritten routing</td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.4/ping_pong">Ping pong</a> + 
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.4/log_output">Log output</a>
+    </td>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.4">3.5.</a></td>
+    <td>The project, step 14</td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.5/todo_app">Todo App</a>
+    </td>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.6">3.6.</a></td>
+    <td>The project, step 15</td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.6/todo_app">Todo App</a>
+    </td>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.7">3.7.</a></td>
+    <td>The project, step 16</td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.7/todo_app">Todo App</a>
+    </td>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.8">3.8.</a></td>
+    <td>The project, step 17</td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.8/todo_app">Todo App</a>
+    </td>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.9">3.9.</a></td>
+    <td>DBaaS vs DIY</td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.9/todo_app">Todo App</a>
+    </td>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.10">3.10.</a></td>
+    <td>The project, step 18</td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.10/todo_backend">Todo Backend</a>
+    </td>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.11">3.11.</a></td>
+    <td>The project, step 19</td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.11/todo_backend">Todo Backend</a>
+    </td>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.12">3.12.</a></td>
+    <td>The project, step 20</td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.12/todo_backend">Todo Backend</a>
+    </td>
+  </tr>
+</table>
 
 ### Chapter 5
 
@@ -50,11 +124,17 @@
   <tr>
     <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.1">4.1.</a></td>
     <td>Readiness probe</td>
-    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.1/ping_pong">Ping pong</a> + <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.1/log_output">Log output</a></td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.1/ping_pong">Ping pong</a> + 
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.1/log_output">Log output</a>
+    </td>
   </tr>
   <tr>
-    <td>4.2</td>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.2">4.2.</a></td>
     <td>The project, step 21</td>
-    <td></td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.2/todo_backend">Todo Backend</a> + 
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.2/todo_app">Todo App</a>
+    </td>
   </tr>
 </table>
