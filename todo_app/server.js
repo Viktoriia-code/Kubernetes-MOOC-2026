@@ -10,6 +10,7 @@ const todoMaxLength = Number(process.env.TODO_MAX_LENGTH);
 const imagePath = path.join(cacheDirectory, 'image.jpg');
 const todoBackendUrl = process.env.TODO_BACKEND_URL;
 let refreshPromise;
+let isHealthy = true;
 
 if (!Number.isFinite(port) || !imageUrl || !cacheDirectory || !Number.isFinite(cacheMaxAge)
   || !Number.isFinite(todoMaxLength) || !todoBackendUrl) {
@@ -81,6 +82,34 @@ async function sendStatic(response, fileName) {
 
 const server = http.createServer(async (request, response) => {
   try {
+    if (request.url === '/healthz' && request.method === 'GET') {
+      if (!isHealthy) {
+        response.writeHead(500, { 'Content-Type': 'application/json' });
+        response.end(JSON.stringify({ status: 'unhealthy' }));
+        return;
+      }
+
+      response.writeHead(200, { 'Content-Type': 'application/json' });
+      response.end(JSON.stringify({ status: 'ok' }));
+      return;
+    }
+
+    if (request.url === '/readyz' && request.method === 'GET') {
+      const backendResponse = await fetch(`${todoBackendUrl}/healthz`);
+      response.writeHead(backendResponse.ok ? 200 : 503, {
+        'Content-Type': 'application/json',
+      });
+      response.end(JSON.stringify({ status: backendResponse.ok ? 'ok' : 'unready' }));
+      return;
+    }
+
+    if (request.url === '/break' && request.method === 'POST') {
+      isHealthy = false;
+      response.writeHead(200, { 'Content-Type': 'application/json' });
+      response.end(JSON.stringify({ status: 'unhealthy' }));
+      return;
+    }
+
     if (request.url === '/config' && request.method === 'GET') {
       response.writeHead(200, { 'Content-Type': 'application/json' });
       response.end(JSON.stringify({ todoMaxLength }));

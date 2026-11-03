@@ -50,6 +50,17 @@ button {
     font-size: 16px;
     padding: 0 22px;
 }
+#break-app {
+    align-self: center;
+    background: #D9534F;
+    margin-top: 16px;
+    border: 0;
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0 22px;
+}
 ul {
     align-self: stretch;
     font-size: 18px;

@@ -2,6 +2,7 @@ const form = document.getElementById('todo-form');
 const input = document.getElementById('todo-content');
 const todos = document.getElementById('todos');
 const error = document.getElementById('error');
+const breakButton = document.getElementById('break-app');
 let todoMaxLength;
 
 function renderTodos(items) {
@@ -44,6 +45,13 @@ form.addEventListener('submit', async (event) => {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ content })
+    });
+
+    breakButton.addEventListener('click', async () => {
+        const response = await fetch('/break', { method: 'POST' });
+        if (!response.ok) {
+            error.textContent = 'Could not break the application';
+        }
     });
     if (!response.ok) {
     error.textContent = await response.text();

@@ -1,11 +1,20 @@
-# Exercise 3.12 - The project, step 20
+# Exercise 4.2 - The project, step 21
 
 ## Task
-> GKE includes monitoring systems already so we can just enable the monitoring.
->
-> Read the documentation for Kubernetes Engine Monitoring [here](https://cloud.google.com/monitoring/kubernetes-engine). Find out how to find the application logs for the project in GKE.
->
-> Add to your repository a picture of the logs when a new todo is created.
+> Create the required probes and endpoint for The Project to ensure that it's working and connected to a database.
+
+## Health probes and application recovery
+
+The backend exposes `GET /healthz`, which runs `SELECT 1` against PostgreSQL:
+
+- PostgreSQL is available: the endpoint returns `200` with `{"status":"ok"}`.
+- PostgreSQL is unavailable: the endpoint returns `500` with `{"status":"unhealthy"}`.
+
+The backend deployment uses this endpoint for its Kubernetes readiness probe:
+
+- The **readiness probe** prevents traffic from reaching the backend while PostgreSQL is unavailable.
+
+There is no liveness probe because `/healthz` depends on PostgreSQL. A temporary database outage therefore makes the backend unready without unnecessarily restarting the backend pod. A separate liveness endpoint that checks only whether the process is running could be added if liveness monitoring is required.
 
 ## GKE application logs
 

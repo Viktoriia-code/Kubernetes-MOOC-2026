@@ -15,6 +15,7 @@ const pool = new Pool({
   user: databaseUser,
   password: databasePassword,
 });
+let isHealthy = true;
 
 if (!Number.isFinite(port) || !Number.isFinite(todoMaxLength) || !databaseHost
   || !Number.isFinite(databasePort) || !databaseName || !databaseUser || !databasePassword) {
@@ -63,6 +64,17 @@ function readBody(request) {
 }
 
 const server = http.createServer(async (request, response) => {
+  if (request.url === '/healthz' && request.method === 'GET') {
+    try {
+      await pool.query('SELECT 1');
+      sendJson(response, 200, { status: 'ok' });
+    } catch (error) {
+      console.error(`Database connection check failed: ${error.message}`);
+      sendJson(response, 500, { status: 'unhealthy' });
+    }
+    return;
+  }
+
   if (request.url !== '/todos' || !['GET', 'POST'].includes(request.method)) {
     response.writeHead(404);
     response.end('Not found');

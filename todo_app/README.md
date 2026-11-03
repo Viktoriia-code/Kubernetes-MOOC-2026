@@ -1,3 +1,41 @@
+# Exercise 4.2 - The project, step 21
+
+## Task
+> Create the required probes and endpoint for The Project to ensure that it's working and connected to a database.
+
+## Health probes and application recovery
+
+The project frontend now exposes three endpoints:
+
+- `GET /healthz` is the liveness endpoint. It returns `200` during normal operation and `500` after the application is deliberately broken.
+- `GET /readyz` is the readiness endpoint. It checks the backend health endpoint and returns `200` only when PostgreSQL is available.
+- `POST /break` marks the frontend as unhealthy so the liveness probe can restart the pod.
+
+The backend exposes `GET /healthz`, which runs `SELECT 1` against PostgreSQL. This endpoint is used by the backend readiness and liveness probes.
+
+The probes were added in [`todo_app/manifests/deployment.yaml`](./manifests/deployment.yaml) and [`todo_backend/manifests/deployment.yaml`](../todo_backend/manifests/deployment.yaml):
+
+```yaml
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: 3001
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 3001
+```
+
+After deploying the project, click **Break the app** in the frontend. The frontend's liveness probe starts returning `500`, Kubernetes restarts the pod, and the application becomes healthy again:
+
+```powershell
+kubectl get pods -n project --watch
+kubectl describe pod <todo-app-pod> -n project
+kubectl logs -n project deployment/todo-app
+```
+
+The frontend pod should return to `1/1` in the `READY` column after the restart. Screenshots of the broken state and the recovered pod:
+
 # Exercise 3.9 - DBaaS vs DIY
 
 ## Task
