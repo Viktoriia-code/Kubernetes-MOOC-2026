@@ -70,7 +70,13 @@ ul {
 }
 .error {
     color: #b00020;
-    min-height: 24px;
+    align-self: stretch;
+    font-size: 14px;
+    font-weight: normal;
+    margin: 8px 0 0;
+}
+.error:empty {
+    display: none;
 }
 p {
     color: #666;
