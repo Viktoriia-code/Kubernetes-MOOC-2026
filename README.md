@@ -61,7 +61,7 @@
     </td>
   </tr>
   <tr>
-    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.4">3.5.</a></td>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.5">3.5.</a></td>
     <td>The project, step 14</td>
     <td>
       <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/3.5/todo_app">Todo App</a>
