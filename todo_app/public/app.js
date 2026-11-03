@@ -47,18 +47,19 @@ form.addEventListener('submit', async (event) => {
     body: JSON.stringify({ content })
     });
 
-    breakButton.addEventListener('click', async () => {
-        const response = await fetch('/break', { method: 'POST' });
-        if (!response.ok) {
-            error.textContent = 'Could not break the application';
-        }
-    });
     if (!response.ok) {
     error.textContent = await response.text();
     return;
     }
     input.value = '';
     await loadTodos();
+});
+
+breakButton.addEventListener('click', async () => {
+    const response = await fetch('/break', { method: 'POST' });
+    if (!response.ok) {
+        error.textContent = 'Could not break the application';
+    }
 });
 
 async function loadConfiguration() {
