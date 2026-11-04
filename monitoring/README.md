@@ -35,8 +35,5 @@ Open http://localhost:9090.
 ```promql
 sum(kube_pod_info{namespace="prometheus", created_by_kind="StatefulSet"})
 ```
-
-## Result
-
-**3 Pods** created by StatefulSets in the `prometheus` namespace.
+The expected result is **3 Pods** created by StatefulSets in the `prometheus` namespace.
 <img width="772" height="365" alt="image" src="https://github.com/user-attachments/assets/bab6fa80-cacf-4f11-a490-e609fd5346e6" />
