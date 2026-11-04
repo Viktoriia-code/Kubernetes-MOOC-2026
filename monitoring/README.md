@@ -21,6 +21,7 @@ helm upgrade --install promstack prometheus-community/kube-prometheus-stack --ve
 ```powershell
 kubectl get statefulsets -n prometheus
 ```
+<img width="863" height="82" alt="image" src="https://github.com/user-attachments/assets/69e4d7ee-7503-4a18-9bae-74d2554f153b" />
 
 ### 3. Access Prometheus
 
