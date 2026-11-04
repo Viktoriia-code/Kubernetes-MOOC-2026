@@ -137,4 +137,11 @@
       <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.2/todo_backend">Todo Backend</a>
     </td>
   </tr>
+  <tr>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.3">4.3.</a></td>
+    <td>Prometheus</td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.3/monitoring">Monitoring</a>
+    </td>
+  </tr>
 </table>
