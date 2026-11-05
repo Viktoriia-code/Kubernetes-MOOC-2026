@@ -10,7 +10,7 @@ The `PUT /todos/<id>` endpoint updates the completion state of one todo. The
 must contain a boolean `done` field:
 
 ```http
-PUT /todos/2
+PUT /todos/1
 Content-Type: application/json
 
 { "done": true }
@@ -21,11 +21,13 @@ For a successful update, the backend executes a parameterized PostgreSQL
 
 ```json
 {
-  "id": 2,
-  "content": "Deploy application to cluster",
+  "id": 1,
+  "content": "Learn Kubernetes basics",
   "done": true
 }
 ```
+
+<img width="422" height="422" alt="Screenshot 2026-11-05 150547" src="https://github.com/user-attachments/assets/bee3152b-7abf-49da-af32-82b7eb4e1c78" />
 
 The endpoint also supports setting a todo back to incomplete:
 
