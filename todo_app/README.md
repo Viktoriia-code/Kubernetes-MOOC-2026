@@ -13,6 +13,8 @@ Each todo is displayed as a card with its content and a status button:
   displayed with a strikethrough.
 - Todo links are rendered as clickable links and open in a new browser tab.
 
+<img width="802" height="696" alt="Screenshot 2026-11-05 150442" src="https://github.com/user-attachments/assets/9a6567db-84a4-42f3-9093-a9292b200198" />
+
 The request body contains a JSON boolean:
 
 ```json
@@ -23,11 +25,13 @@ The backend validates that `done` is a boolean, updates the matching row in Post
 
 ```json
 {
-  "id": 2,
-  "content": "Deploy application to cluster",
+  "id": 1,
+  "content": "Learn Kubernetes basics",
   "done": true
+
 }
 ```
+<img width="422" height="422" alt="Screenshot 2026-11-05 150547" src="https://github.com/user-attachments/assets/e92c7659-fd5c-4dfe-97e0-0d385a9fab51" />
 
 The `GET /todos` response includes the `done` value for every todo, so the frontend can restore the correct status after loading or refreshing the page.
 The `done` column is created with `DEFAULT FALSE`; startup migration also adds the column to an existing database without changing the existing todo content.
