@@ -1,52 +1,150 @@
-# Exercise 4.1 - Readines probe
+# Exercise 4.4 - Your canary
 
 ## Task
-> Create a ReadinessProbe for the Ping-pong application. It should be ready when it has a connection to the database.
+> Create an AnalysisTemplate for the Ping-pong app that will follow the CPU usage of all containers in the namespace.
 > 
-> And another ReadinessProbe for Log output application. It should be ready when it can receive data from the Ping-pong application.
+> If the CPU usage rate sum for the namespace increases above a set value (you may choose a good hardcoded value) within 5 minutes, revert the update.
 > 
-> Test that it works by applying everything but the database statefulset. The output of kubectl get po should look like this before the database is available:
-> 
-> ```text
-> NAME                             READY   STATUS    RESTARTS   AGE
-> logoutput-dep-7f49547cf4-ttj4f   1/2     Running   0          21s
-> pingpong-dep-9b698d6fb-jdgq9     0/1     Running   0          21s
-> ```
-> 
-> Adding the database should automatically move the READY states to 2/2 and 1/1 for Log output and Ping-pong respectively.
+> Make sure that the application doesn't get updated, if the value is set too low.
 
-## Readiness probe implementation
+## Implementation
 
-Readiness probes were added to the Kubernetes Deployment manifests:
+The [`analysistemplate.yaml`](./manifests/analysistemplate.yaml) uses Prometheus to calculate the total CPU usage rate of containers in the `default` namespace over five minutes.
 
-- [`ping_pong/manifests/deployment.yaml`](./manifests/deployment.yaml) checks `/pings` on the Ping-pong container. The endpoint succeeds only when PostgreSQL is available.
+The analysis fails if CPU usage reaches or exceeds `0.2` CPU cores.
 
-The following configuration was added to the Ping-pong container:
+### 1. Install Argo Rollouts
 
-```yaml
-readinessProbe:
-  httpGet:
-    path: /pings
-    port: 3000
-  initialDelaySeconds: 10
-  periodSeconds: 5
-```
-
-As a result, Kubernetes adds the Ping-pong pod to the Service endpoints only after PostgreSQL is available.
-
-After PostgreSQL is available, check the Ping-pong readiness status:
+Create the namespace:
 
 ```powershell
-kubectl get pods
-kubectl describe pod <pod-name>
-kubectl get endpoints ping-pong-svc
+kubectl create namespace argo-rollouts
 ```
 
-The Ping-pong pod should show `1/1` in the `READY` column, and
-`ping-pong-svc` should have an endpoint. Screenshots of these results are added below:
+Install Argo Rollouts using server side apply to avoid CRD annotation size errors:
 
-<img width="854" height="289" alt="image" src="https://github.com/user-attachments/assets/bfc1f4e4-11e2-4428-b2be-cdbc54c62c01" />
-<img width="747" height="70" alt="image" src="https://github.com/user-attachments/assets/f616e75b-80f6-41d4-a6dd-40f20e980741" />
+```powershell
+kubectl apply --server-side -n argo-rollouts -f https://github.com/argoproj/argo-rollouts/releases/latest/download/install.yaml
+```
+
+Verify the installation:
+
+```powershell
+kubectl get crd rollouts.argoproj.io
+kubectl rollout status deployment/argo-rollouts -n argo-rollouts
+```
+
+### 2. Configure the AnalysisTemplate
+
+In [`analysistemplate.yaml`](./manifests/analysistemplate.yaml), configure:
+
+```yaml
+initialDelay: 1m
+interval: 30s
+count: 10
+failureLimit: 0
+successCondition: result < 0.2
+```
+
+The Prometheus query:
+
+```promql
+scalar(
+  sum(
+    rate(
+      container_cpu_usage_seconds_total{
+        namespace="default",
+        container!="",
+        container!="POD"
+      }[5m]
+    )
+  )
+)
+```
+
+The `count: 10` setting prevents the analysis from running indefinitely, which would make the Rollout specification invalid.
+
+### 3. Configure the Canary Rollout
+
+Replace the Ping Pong Deployment with a Rollout.
+
+In [`rollout.yaml`](./manifests/rollout.yaml), configure two replicas and reference the AnalysisTemplate:
+
+```yaml
+spec:
+  replicas: 2
+  strategy:
+    canary:
+      steps:
+        - setWeight: 50
+        - analysis:
+            templates:
+              - templateName: ping-pong-cpu-usage
+```
+
+Keep the existing container image, environment variables, ports, and readiness probe.
+
+### 4. Apply Using Kustomize
+
+Include `rollout.yaml` and `analysistemplate.yaml` in `kustomization.yaml`. Exclude the old `deployment.yaml`.
+
+Apply the resources from the project root:
+
+```powershell
+kubectl apply -k .
+```
+
+Verify:
+
+```powershell
+kubectl get rollouts
+kubectl get analysistemplates
+kubectl get pods
+```
+
+### 5. Test the Rollback
+
+After the initial Rollout becomes healthy, temporarily set a very low CPU threshold:
+
+```yaml
+successCondition: result < 0.000001
+```
+
+Apply the updated configuration:
+
+```powershell
+kubectl apply -k .
+```
+
+Change the application image version in `rollout.yaml` and apply again to trigger a new revision.
+
+Verify that the analysis fails and Argo Rollouts aborts the update.
+
+### 6. Monitor the Rollout
+
+```powershell
+kubectl get rollout ping-pong -w
+```
+
+Check the analysis:
+
+```powershell
+kubectl get analysisruns
+```
+
+For detailed information:
+
+```powershell
+kubectl describe rollout ping-pong
+```
+
+## Result
+
+Argo Rollouts was successfully installed, and the Ping Pong Rollout was created with two replicas.
+
+The initial deployment of version `4.4` was recorded as completed, although the Pods were still becoming available at the last check.
+
+Automatic rollback with a low CPU threshold remains to be verified.
 
 ## Overview
 

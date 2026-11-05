@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: ping-pong-cpu-usage
+spec:
+  metrics:
+    - name: namespace-cpu-usage
+      initialDelay: 1m
+      interval: 30s
+      count: 8
+      failureLimit: 0
+      successCondition: result < 0.3
+      provider:
+        prometheus:
+          address: http://promstack-kube-prometheus-prometheus.prometheus.svc.cluster.local:9090
+          query: |
+            scalar(
+              sum(
+                rate(
+                  container_cpu_usage_seconds_total{
+                    namespace="default",
+                    container!="",
+                    container!="POD"
+                  }[5m]
+                )
+              )
+            )

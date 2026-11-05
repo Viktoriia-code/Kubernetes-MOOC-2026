@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: ping-pong
-          image: gcr.io/dwk-gke-513110/ping-pong:4.1
+          image: vikikone/ping-pong:4.4
           imagePullPolicy: Always
           envFrom:
             - configMapRef:
