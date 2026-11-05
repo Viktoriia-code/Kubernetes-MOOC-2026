@@ -28,9 +28,13 @@ async function initializeDatabase() {
       await pool.query(`
         CREATE TABLE IF NOT EXISTS todos (
           id SERIAL PRIMARY KEY,
-          content TEXT NOT NULL
+          content TEXT NOT NULL,
+          done BOOLEAN NOT NULL DEFAULT FALSE
         )
       `);
+      await pool.query(
+        'ALTER TABLE todos ADD COLUMN IF NOT EXISTS done BOOLEAN NOT NULL DEFAULT FALSE',
+      );
       const result = await pool.query('SELECT COUNT(*)::int AS count FROM todos');
       if (result.rows[0].count === 0) {
         await pool.query(
@@ -75,7 +79,11 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
-  if (request.url !== '/todos' || !['GET', 'POST'].includes(request.method)) {
+  const todoIdMatch = request.url.match(/^\/todos\/(\d+)$/);
+  if ((request.url !== '/todos' && !todoIdMatch)
+    || !['GET', 'POST', 'PUT'].includes(request.method)
+    || (todoIdMatch && request.method !== 'PUT')
+    || (!todoIdMatch && request.method === 'PUT')) {
     response.writeHead(404);
     response.end('Not found');
     return;
@@ -83,7 +91,7 @@ const server = http.createServer(async (request, response) => {
 
   if (request.method === 'GET') {
     try {
-      const result = await pool.query('SELECT id, content FROM todos ORDER BY id');
+      const result = await pool.query('SELECT id, content, done FROM todos ORDER BY id');
       sendJson(response, 200, result.rows);
     } catch (error) {
       console.error(`Failed to read todos: ${error.message}`);
@@ -101,6 +109,29 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
+  if (request.method === 'PUT') {
+    if (typeof todo.done !== 'boolean') {
+      sendJson(response, 400, { error: 'Todo done must be a boolean' });
+      return;
+    }
+
+    try {
+      const result = await pool.query(
+        'UPDATE todos SET done = $1 WHERE id = $2 RETURNING id, content, done',
+        [todo.done, Number(todoIdMatch[1])],
+      );
+      if (result.rowCount === 0) {
+        sendJson(response, 404, { error: 'Todo not found' });
+        return;
+      }
+      sendJson(response, 200, result.rows[0]);
+    } catch (error) {
+      console.error(`Failed to update todo: ${error.message}`);
+      sendJson(response, 500, { error: 'Could not access todos' });
+    }
+    return;
+  }
+
   try {
     console.log(`Todo submitted: ${JSON.stringify(todo.content)}`);
     if (typeof todo.content !== 'string' || todo.content.trim().length === 0 || todo.content.length > todoMaxLength) {
@@ -110,7 +141,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     const result = await pool.query(
-      'INSERT INTO todos (content) VALUES ($1) RETURNING id, content',
+      'INSERT INTO todos (content) VALUES ($1) RETURNING id, content, done',
       [todo.content.trim()],
     );
     console.log(`Todo created: ${JSON.stringify(result.rows[0])}`);

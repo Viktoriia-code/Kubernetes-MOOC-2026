@@ -151,4 +151,12 @@
       <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.4/ping_pong">Ping pong</a>
     </td>
   </tr>
+  <tr>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.5">4.5.</a></td>
+    <td>The project, step 22</td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.5/todo_app">Todo App</a> +
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.5/todo_backend">Todo Backend</a>
+    </td>
+  </tr>
 </table>

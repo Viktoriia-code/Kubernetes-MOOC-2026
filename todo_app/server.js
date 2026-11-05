@@ -126,11 +126,12 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
-    if (request.url === '/todos' && (request.method === 'GET' || request.method === 'POST')) {
-      const backendResponse = await fetch(`${todoBackendUrl}/todos`, {
+    if (request.url.match(/^\/todos(?:\/\d+)?$/)
+      && ['GET', 'POST', 'PUT'].includes(request.method)) {
+      const backendResponse = await fetch(`${todoBackendUrl}${request.url}`, {
         method: request.method,
-        headers: request.method === 'POST' ? { 'Content-Type': 'application/json' } : undefined,
-        body: request.method === 'POST' ? await new Promise((resolve, reject) => {
+        headers: request.method !== 'GET' ? { 'Content-Type': 'application/json' } : undefined,
+        body: request.method !== 'GET' ? await new Promise((resolve, reject) => {
           let body = '';
           request.on('data', (chunk) => { body += chunk; });
           request.on('end', () => resolve(body));

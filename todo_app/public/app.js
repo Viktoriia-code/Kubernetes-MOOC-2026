@@ -8,19 +8,44 @@ let todoMaxLength;
 function renderTodos(items) {
     todos.replaceChildren(...items.map((todo) => {
     const item = document.createElement('li');
+    const content = document.createElement('span');
+    content.className = todo.done ? 'todo-content done' : 'todo-content';
     const urlMatch = todo.content.match(/^(.*?)(https?:\/\/\S+)$/);
     if (!urlMatch) {
-        item.textContent = todo.content;
-        return item;
+        content.textContent = todo.content;
+    } else {
+        content.append(document.createTextNode(urlMatch[1]));
+        const link = document.createElement('a');
+        link.href = urlMatch[2];
+        link.textContent = urlMatch[2];
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        content.append(link);
     }
 
-    item.append(document.createTextNode(urlMatch[1]));
-    const link = document.createElement('a');
-    link.href = urlMatch[2];
-    link.textContent = urlMatch[2];
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    item.append(link);
+    item.append(content);
+    const status = document.createElement('button');
+    status.className = todo.done ? 'todo-status completed' : 'todo-status';
+    status.textContent = todo.done ? 'Done' : 'Mark done';
+    status.type = 'button';
+    status.disabled = todo.done;
+    status.addEventListener('click', async () => {
+        status.disabled = true;
+        error.textContent = '';
+        try {
+            const response = await fetch(`/todos/${todo.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ done: true }),
+            });
+            if (!response.ok) throw new Error(await response.text());
+            await loadTodos();
+        } catch (requestError) {
+            status.disabled = false;
+            error.textContent = requestError.message;
+        }
+    });
+    item.append(status);
     return item;
     }));
 }

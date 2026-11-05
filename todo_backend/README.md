@@ -1,23 +1,54 @@
-# Exercise 4.2 - The project, step 21
+# Exercise 4.5 - The project, step 22
 
 ## Task
-> Create the required probes and endpoint for The Project to ensure that it's working and connected to a database.
+> Speaking of updating. Our todo application could use "Done" field for todos that are already done. It should be a PUT request to `/todos/<id>`.
 
-## Health probes and application recovery
+## Implementation
 
-The backend exposes `GET /healthz`, which runs `SELECT 1` against PostgreSQL:
+The `PUT /todos/<id>` endpoint updates the completion state of one todo. The
+`<id>` must be the numeric ID returned by `GET /todos`, and the request body
+must contain a boolean `done` field:
 
-- PostgreSQL is available: the endpoint returns `200` with `{"status":"ok"}`.
-- PostgreSQL is unavailable: the endpoint returns `500` with `{"status":"unhealthy"}`.
+```http
+PUT /todos/2
+Content-Type: application/json
 
-The backend deployment uses this endpoint for its Kubernetes readiness probe:
+{ "done": true }
+```
 
-- The **readiness probe** prevents traffic from reaching the backend while PostgreSQL is unavailable.
+For a successful update, the backend executes a parameterized PostgreSQL
+`UPDATE` query and returns HTTP `200` with the updated row:
 
-There is no liveness probe because `/healthz` depends on PostgreSQL. A temporary database outage therefore makes the backend unready without unnecessarily restarting the backend pod. A separate liveness endpoint that checks only whether the process is running could be added if liveness monitoring is required.
+```json
+{
+  "id": 2,
+  "content": "Deploy application to cluster",
+  "done": true
+}
+```
+
+The endpoint also supports setting a todo back to incomplete:
+
+```powershell
+curl.exe -X PUT http://localhost:2345/todos/2 `
+  -H "Content-Type: application/json" `
+  -d '{ "done": false }'
+```
+
+Invalid JSON or a missing/non-boolean `done` field returns HTTP `400`. If the
+numeric ID does not exist, the backend returns HTTP `404`. Database failures
+are logged and return HTTP `500` without exposing database details to the
+client.
+
+During startup, the backend creates the `todos` table with a `done BOOLEAN NOT
+NULL DEFAULT FALSE` column. It also runs an idempotent migration with
+`ADD COLUMN IF NOT EXISTS`, so databases created by an earlier version gain the
+new column while preserving all existing todo content. The `GET /todos`
+response always includes `id`, `content`, and `done`, and newly created todos
+start with `done: false`.
 
 ## Application
-The Todo backend is a Node.js HTTP service used by the project frontend. It provides a small JSON API for reading and creating todo items. Todo data is stored in PostgreSQL instead of in application memory. The project frontend renders URLs in todo content as clickable links.
+The Todo backend is a Node.js HTTP service used by the project frontend. It provides a small JSON API for reading, creating, and completing todo items. Todo data is stored in PostgreSQL instead of in application memory. The project frontend renders URLs in todo content as clickable links.
 
 ## Deploy to Google Kubernetes Engine
 
@@ -71,6 +102,55 @@ Configure Docker authentication for Google Container Registry and push the image
 ```powershell
 gcloud auth configure-docker gcr.io
 docker push gcr.io/dwk-gke-513110/todo-backend:3.5
+```
+</details>
+
+<details>
+<summary>Build and run the image locally</summary>
+
+Build the image from the `todo_backend` directory:
+
+```powershell
+docker build -t todo-backend:local .
+```
+
+Start the backend container by connecting it to a PostgreSQL container on the
+same Docker network:
+
+```powershell
+docker network create todo-network
+docker run -d --name todo-postgres --network todo-network `
+  -e POSTGRES_DB=todo `
+  -e POSTGRES_USER=todo `
+  -e POSTGRES_PASSWORD=todo `
+  postgres:16
+
+docker run -d --name todo-backend --network todo-network -p 2345:2345 `
+  -e PORT=2345 `
+  -e TODO_MAX_LENGTH=140 `
+  -e DB_HOST=todo-postgres `
+  -e DB_PORT=5432 `
+  -e DB_NAME=todo `
+  -e DB_USER=todo `
+  -e DB_PASSWORD=todo `
+  todo-backend:local
+```
+
+The API is available at `http://localhost:2345/todos` and running in the background.
+
+Stop the backend:
+```powershell
+docker ps                    # Check running containers
+docker logs todo-backend     # View backend logs
+docker stop todo-backend     # Stop the backend
+docker start todo-backend    # Start it again
+```
+
+Remove the PostgreSQL container when finished:
+
+```powershell
+docker rm -f todo-postgres
+docker network rm todo-network
 ```
 </details>
 

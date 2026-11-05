@@ -1,103 +1,77 @@
-# Exercise 4.2 - The project, step 21
+# Exercise 4.5 - The project, step 22
 
 ## Task
-> Create the required probes and endpoint for The Project to ensure that it's working and connected to a database.
+> Speaking of updating. Our todo application could use "Done" field for todos that are already done. It should be a PUT request to `/todos/<id>`.
 
-## Health probes and application recovery
+## Implementation
 
-The project frontend now exposes three endpoints:
+Each todo is displayed as a card with its content and a status button:
 
-- `GET /healthz` is the liveness endpoint. It returns `200` during normal operation and `500` after the application is deliberately broken.
-- `GET /readyz` is the readiness endpoint. It checks the backend health endpoint and returns `200` only when PostgreSQL is available.
-- `POST /break` marks the frontend as unhealthy so the liveness probe can restart the pod.
+- New todos show a **Mark done** button.
+- Clicking **Mark done** sends a `PUT` request to `/todos/<id>`.
+- Successfully completed todos show a green **Done** label and their content is
+  displayed with a strikethrough.
+- Todo links are rendered as clickable links and open in a new browser tab.
 
-The backend exposes `GET /healthz`, which runs `SELECT 1` against PostgreSQL. This endpoint is used by the backend readiness and liveness probes.
+The request body contains a JSON boolean:
 
-The probes were added in [`todo_app/manifests/deployment.yaml`](./manifests/deployment.yaml) and [`todo_backend/manifests/deployment.yaml`](../todo_backend/manifests/deployment.yaml):
-
-```yaml
-readinessProbe:
-  httpGet:
-    path: /readyz
-    port: 3001
-livenessProbe:
-  httpGet:
-    path: /healthz
-    port: 3001
+```json
+{ "done": true }
 ```
 
-After deploying the project, click **Break the app** in the frontend. The frontend marks itself unhealthy, and the next page request is served by the backend as a **System Failure** page. Its liveness probe returns `500`, so Kubernetes restarts the pod. After the restart, a page reload shows the application again:
+The backend validates that `done` is a boolean, updates the matching row in PostgreSQL, and returns the updated todo:
+
+```json
+{
+  "id": 2,
+  "content": "Deploy application to cluster",
+  "done": true
+}
+```
+
+The `GET /todos` response includes the `done` value for every todo, so the frontend can restore the correct status after loading or refreshing the page.
+The `done` column is created with `DEFAULT FALSE`; startup migration also adds the column to an existing database without changing the existing todo content.
+Therefore, completed states remain available after a page refresh, container restart, or Kubernetes pod replacement.
+
+Invalid update requests are rejected with HTTP `400`, and an ID that does not exist returns HTTP `404`. If the update fails in the browser, the error is shown to the user and the todo status is not presented as completed.
+
+## Important steps
+
+<details>
+<summary>Build and run the image locally</summary>
+
+Build the image from the `todo_app` directory:
 
 ```powershell
-kubectl get pods -n project --watch
-kubectl describe pod <todo-app-pod> -n project
-kubectl logs -n project deployment/todo-app
+docker build -t todo-app:local .
 ```
 
-The frontend pod should return to `1/1` in the `READY` column after the restart. Screenshots of the broken state and the recovered pod:
-<img width="850" height="272" alt="Screenshot 2026-11-04 002900" src="https://github.com/user-attachments/assets/da4c0863-5158-4fda-9271-33bc1eb0c95c" />
-<img width="740" height="142" alt="image" src="https://github.com/user-attachments/assets/07922b7f-3448-4211-873c-8e1175fd37b5" />
+Start the app container on the same Docker network as the local backend:
 
-# Exercise 3.9 - DBaaS vs DIY
+```powershell
+docker run -d --name todo-app --network todo-network -p 3001:3001 `
+  -e PORT=3001 `
+  -e IMAGE_URL=https://picsum.photos/1200 `
+  -e CACHE_DIRECTORY=/app/data `
+  -e CACHE_MAX_AGE_MS=600000 `
+  -e TODO_BACKEND_URL=http://todo-backend:2345 `
+  -e TODO_MAX_LENGTH=140 `
+  todo-app:local
+```
 
-## Task
+The app is available at `http://localhost:3001` and running in the background.
 
-Do a pros/cons comparison of the solutions in terms of meaningful differences. This includes at least the required work and costs to initialize, as well as the maintenance. Backup methods and their ease of usage should be considered as well.
+Stop the app:
+```powershell
+docker ps                    # Check running containers
+docker logs todo-app         # View app logs
+docker stop todo-app         # Stop the app
+docker start todo-app       # Start it again
+```
 
-## Overview of the solutions
+Remove the app container when finished:
 
-**Google Cloud SQL** is a managed PostgreSQL database service (DBaaS). Google provides the database infrastructure and handles much of its operation, while the application connects to it through a configured endpoint.
-
-**Self-managed PostgreSQL** runs inside the GKE cluster, typically using a `StatefulSet`, `PersistentVolumeClaim`, and Kubernetes Service. The team owns the database infrastructure and its operation, including storage, upgrades, backups, and recovery.
-
-## Google Cloud SQL (managed DBaaS)
-
-### Pros
-
-- **Quick setup:** An instance can be provisioned in minutes through the Google Cloud console or CLI.
-- **Fully managed:** Google handles infrastructure maintenance, patching, upgrades, and managed backups.
-- **High availability:** Regional instances can provide automated failover, reducing the impact of an instance failure.
-- **Point-in-time recovery:** Automated backups and WAL-based recovery can be enabled without building a backup system from scratch.
-- **Security and observability:** Cloud SQL integrates with IAM, private IP, Cloud Monitoring, and Cloud Logging.
-- **Low operational overhead:** The team can focus on the application instead of running a database platform.
-
-### Cons
-
-- **Higher direct cost:** CPU, memory, storage, backups, network traffic, and high availability are billed separately.
-- **Less control:** Cloud SQL does not provide unrestricted superuser access, and supported PostgreSQL extensions and configuration options are limited.
-- **Vendor lock-in:** Networking, IAM, monitoring, and recovery workflows are closely tied to Google Cloud.
-- **Upgrade coordination:** Major version upgrades still require planning and may require manual intervention or downtime depending on the operation.
-
-## Self-managed PostgreSQL on GKE
-
-This option uses Kubernetes resources such as a `StatefulSet`, Service, Secret, and `PersistentVolumeClaim`. A PostgreSQL operator such as CloudNativePG or Crunchy can automate parts of high availability, backups, and recovery, but the operator itself also needs to be installed and maintained.
-
-### Pros
-
-- **Full control:** PostgreSQL versions, configuration, extensions, and tuning can be selected for the workload.
-- **Kubernetes-native operation:** The database uses the same deployment, storage, and CI/CD tooling as the rest of the application.
-- **Portability:** Standard PostgreSQL and Kubernetes resources make migration between clouds or to on-premises infrastructure easier.
-- **Flexible infrastructure costs:** Existing GKE capacity and open-source tooling may cost less than Cloud SQL for development or test workloads.
-- **Custom storage and scaling:** The team chooses disk types, sizes, node pools, and resource limits.
-
-### Cons
-
-- **More complex initialization:** The team must configure manifests, storage, users, networking, and potentially an operator.
-- **Full maintenance responsibility:** Upgrades, patching, tuning, monitoring, failover, and capacity planning are no longer delegated to Google.
-- **Manual backup design:** Reliable `pg_dump`/`pg_restore`, WAL archiving, external storage, volume snapshots, and restore testing must be configured. A PVC protects against pod replacement, but is not a complete backup.
-- **Security burden:** The team manages access control, encryption, secrets, network policies, and PostgreSQL security updates.
-- **Higher production total cost of ownership:** Database administrators, SREs, and Kubernetes expertise may cost more than the infrastructure savings.
-- **Failure risk without high availability:** A single PostgreSQL pod is a single point of failure unless replication and automated failover are implemented and tested.
-
-## Recommendation
-
-Cloud SQL is usually the better choice for mission-critical workloads, managed high availability, point-in-time recovery, fast setup, or teams without a dedicated database operations group. Self-managed PostgreSQL is reasonable for development and test environments, Kubernetes-native tooling, or workloads requiring deep PostgreSQL customization and portability. The apparent infrastructure savings of DIY should be compared with the ongoing cost of maintenance, backup implementation, incident response, and recovery testing.
-
-| Use case | Recommended option |
-|---|---|
-| Fast setup with minimal operations | Google Cloud SQL |
-| Mission-critical HA and PITR | Google Cloud SQL |
-| No dedicated database operations team | Google Cloud SQL |
-| Full PostgreSQL customization and tuning | PostgreSQL on GKE |
-| Kubernetes-native database tooling | PostgreSQL on GKE |
-| Lower-cost development or test environment | PostgreSQL on GKE |
+```powershell
+docker rm -f todo-app
+```
+</details>

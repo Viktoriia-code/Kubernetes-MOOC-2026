@@ -12,12 +12,12 @@ main {
     align-items: center;
     display: flex;
     flex-direction: column;
-    padding: 48px 20px 24px;
-    width: min(700px, calc(100% - 40px));
+    padding: 4px 20px 24px;
+    width: min(750px, calc(100% - 40px));
 }
 h1 {
-    font-size: 42px;
-    margin: 0 0 28px;
+    font-size: 32px;
+    margin: 0 0 20px;
 }
 img {
     border-radius: 10px;
@@ -25,24 +25,24 @@ img {
     display: block;
     height: auto;
     max-width: min(1200px, 100%);
-    width: 506px;
+    width: 188px;
 }
 form {
     display: flex;
     gap: 10px;
-    margin-top: 28px;
-    width: 100%;
+    margin-top: 50px;
+    width: min(480px, 100%);
 }
 input {
-    border: 1px solid #bbb;
+    border: 2px solid #ddd;
     border-radius: 4px;
     box-sizing: border-box;
     flex: 1;
     font-size: 16px;
-    padding: 11px 12px;
+    padding: 10px 12px;
 }
 button {
-    background: #555;
+    background: #45ad52;
     border: 0;
     border-radius: 4px;
     color: #fff;
@@ -50,10 +50,14 @@ button {
     font-size: 16px;
     padding: 0 22px;
 }
+h2 {
+    font-size: 24px;
+    margin: 28px 0 10px;
+}
 #break-app {
     align-self: center;
     background: #D9534F;
-    margin-top: 16px;
+    margin-top: 26px;
     border: 0;
     border-radius: 4px;
     color: #fff;
@@ -63,10 +67,44 @@ button {
 }
 ul {
     align-self: stretch;
-    font-size: 18px;
+    font-size: 16px;
     line-height: 1.5;
-    margin: 28px 0 0;
-    padding-left: 28px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+li {
+    align-items: center;
+    background: #f8f8f8;
+    border-left: 4px solid #45bd5a;
+    border-radius: 4px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    margin: 8px 0;
+    min-height: 42px;
+    padding: 0 14px;
+}
+.todo-content {
+    overflow-wrap: anywhere;
+}
+.done {
+    color: #777;
+    text-decoration: line-through;
+}
+.todo-status {
+    background: #147bd1;
+    flex: 0 0 auto;
+    font-size: 14px;
+    padding: 8px 12px;
+}
+.todo-status.completed {
+    background: transparent;
+    color: #32833a;
+    cursor: default;
+    font-weight: bold;
+    padding-right: 0;
 }
 .error {
     color: #b00020;
@@ -78,9 +116,8 @@ ul {
 .error:empty {
     display: none;
 }
-p {
+footer {
     color: #666;
-    font-size: 21px;
-    font-weight: 600;
-    margin: 28px 0 0;
+    font-size: 16px;
+    margin-top: 38px;
 }
