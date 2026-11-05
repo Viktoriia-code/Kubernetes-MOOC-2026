@@ -11,7 +11,7 @@
 
 The [`analysistemplate.yaml`](./manifests/analysistemplate.yaml) uses Prometheus to calculate the total CPU usage rate of containers in the `default` namespace over five minutes.
 
-The analysis fails if CPU usage reaches or exceeds `0.2` CPU cores.
+The analysis fails if CPU usage reaches or exceeds `0.3` CPU cores.
 
 ### 1. Install Argo Rollouts
 
@@ -43,7 +43,7 @@ initialDelay: 1m
 interval: 30s
 count: 10
 failureLimit: 0
-successCondition: result < 0.2
+successCondition: result < 0.3
 ```
 
 The Prometheus query:
@@ -131,12 +131,14 @@ Check the analysis:
 ```powershell
 kubectl get analysisruns
 ```
+<img width="777" height="102" alt="image" src="https://github.com/user-attachments/assets/2c93782f-0763-4c34-a4a2-d2469b380f5d" />
 
 For detailed information:
 
 ```powershell
 kubectl describe rollout ping-pong
 ```
+<img width="1187" height="121" alt="image" src="https://github.com/user-attachments/assets/7afc3571-4977-46c5-99ea-7c7432bdcc89" />
 
 ## Result
 
