@@ -144,4 +144,11 @@
       <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.3/monitoring">Monitoring</a>
     </td>
   </tr>
+  <tr>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.4">4.4.</a></td>
+    <td>Your canary</td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.4/ping_pong">Ping pong</a>
+    </td>
+  </tr>
 </table>
