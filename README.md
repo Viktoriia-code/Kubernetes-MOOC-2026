@@ -159,4 +159,12 @@
       <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.5/todo_backend">Todo Backend</a>
     </td>
   </tr>
+  <tr>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.6">4.6.</a></td>
+    <td>The project, step 23</td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.6/todo_broadcaster">Broadcaster</a> +
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.6/todo_backend">Todo Backend</a>
+    </td>
+  </tr>
 </table>

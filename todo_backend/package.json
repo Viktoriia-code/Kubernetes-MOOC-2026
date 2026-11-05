@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "server.js",
   "dependencies": {
+    "nats": "^2.29.3",
     "pg": "^8.13.1"
   }
 }

@@ -1,51 +1,33 @@
-# Exercise 4.5 - The project, step 22
+# 4.6 - The project, step 23
 
 ## Task
-> Speaking of updating. Our todo application could use "Done" field for todos that are already done. It should be a PUT request to `/todos/<id>`.
+
+> Create a new separate service for sending status messages of the todos to some chat service. Let's call the new service "broadcaster".
 
 ## Implementation
 
-The `PUT /todos/<id>` endpoint updates the completion state of one todo. The
-`<id>` must be the numeric ID returned by `GET /todos`, and the request body
-must contain a boolean `done` field:
+In addition to serving the todo API, the backend publishes todo status events to NATS. The NATS connection and subject are configured in
+[`manifests/configmap.yaml`](./manifests/configmap.yaml):
 
-```http
-PUT /todos/2
-Content-Type: application/json
-
-{ "done": true }
+```yaml
+NATS_URL: nats://my-nats.nats.svc.cluster.local:4222
+NATS_SUBJECT: todo.events
 ```
 
-For a successful update, the backend executes a parameterized PostgreSQL
-`UPDATE` query and returns HTTP `200` with the updated row:
+The backend publishes an event only after the corresponding PostgreSQL operation succeeds:
 
 ```json
 {
-  "id": 2,
-  "content": "Deploy application to cluster",
-  "done": true
+  "type": "todo.created",
+  "todo": {
+    "id": 2,
+    "content": "Deploy application to cluster",
+    "done": false
+  }
 }
 ```
 
-The endpoint also supports setting a todo back to incomplete:
-
-```powershell
-curl.exe -X PUT http://localhost:2345/todos/2 `
-  -H "Content-Type: application/json" `
-  -d '{ "done": false }'
-```
-
-Invalid JSON or a missing/non-boolean `done` field returns HTTP `400`. If the
-numeric ID does not exist, the backend returns HTTP `404`. Database failures
-are logged and return HTTP `500` without exposing database details to the
-client.
-
-During startup, the backend creates the `todos` table with a `done BOOLEAN NOT
-NULL DEFAULT FALSE` column. It also runs an idempotent migration with
-`ADD COLUMN IF NOT EXISTS`, so databases created by an earlier version gain the
-new column while preserving all existing todo content. The `GET /todos`
-response always includes `id`, `content`, and `done`, and newly created todos
-start with `done: false`.
+An update uses `type: "todo.updated"` and includes the new `done` value. The [`todo_broadcaster`](../todo_broadcaster/README.md) service subscribes to this subject and forwards each event to the configured chat webhook.
 
 ## Application
 The Todo backend is a Node.js HTTP service used by the project frontend. It provides a small JSON API for reading, creating, and completing todo items. Todo data is stored in PostgreSQL instead of in application memory. The project frontend renders URLs in todo content as clickable links.
@@ -96,13 +78,16 @@ kubectl cluster-info
 From the `todo_backend` directory, build the image:
 
 ```powershell
-docker build -t gcr.io/dwk-gke-513110/todo-backend:3.5 .
+docker build -t gcr.io/dwk-gke-513110/todo-backend:4.6 .
 ```
 Configure Docker authentication for Google Container Registry and push the image:
 ```powershell
 gcloud auth configure-docker gcr.io
-docker push gcr.io/dwk-gke-513110/todo-backend:3.5
+docker push gcr.io/dwk-gke-513110/todo-backend:4.6
 ```
+
+Use the same image tag in [`kustomization.yaml`](./kustomization.yaml)
+before deploying.
 </details>
 
 <details>
@@ -125,6 +110,18 @@ docker run -d --name todo-postgres --network todo-network `
   -e POSTGRES_PASSWORD=todo `
   postgres:16
 
+The local container also needs a NATS server named `todo-nats` on
+`todo-network`. For example:
+
+```powershell
+docker run -d --name todo-nats --network todo-network `
+  -p 4222:4222 `
+  nats:latest
+```
+
+Start the backend after PostgreSQL and NATS:
+
+```powershell
 docker run -d --name todo-backend --network todo-network -p 2345:2345 `
   -e PORT=2345 `
   -e TODO_MAX_LENGTH=140 `
@@ -133,10 +130,12 @@ docker run -d --name todo-backend --network todo-network -p 2345:2345 `
   -e DB_NAME=todo `
   -e DB_USER=todo `
   -e DB_PASSWORD=todo `
+  -e NATS_URL=nats://todo-nats:4222 `
+  -e NATS_SUBJECT=todo.events `
   todo-backend:local
 ```
 
-The API is available at `http://localhost:2345/todos` and running in the background.
+The API is available at `http://localhost:2345/todos`.
 
 Stop the backend:
 ```powershell
@@ -165,6 +164,21 @@ kubectl create namespace project
 
 If the namespace already exists, continue with the Kustomize command.
 
+Install NATS in the cluster before starting the backend:
+
+```powershell
+helm repo add nats https://nats-io.github.io/k8s/helm/charts/
+helm repo update
+helm upgrade --install my-nats nats/nats `
+  --namespace nats `
+  --create-namespace
+```
+
+The backend ConfigMap expects NATS at
+`my-nats.nats.svc.cluster.local:4222`. If you use another NATS release name or
+namespace, update `NATS_URL` in
+[`manifests/configmap.yaml`](./manifests/configmap.yaml).
+
 Apply all backend, database, and Service resources with Kustomize:
 
 ```powershell
@@ -191,6 +205,21 @@ kubectl get cronjob,jobs -n project
 ```
 
 The backend is available inside the cluster through `todo-backend-svc.project:2345`. The project frontend uses this Service rather than calling the backend directly from outside the cluster.
+
+After creating or updating a todo, verify that the backend connected to NATS:
+
+```powershell
+kubectl logs -n project deployment/todo-backend --tail=100
+```
+
+The logs should contain:
+
+```text
+Connected to NATS at nats://my-nats.nats.svc.cluster.local:4222
+```
+
+Create a new todo after both the backend and broadcaster are running. Core NATS
+does not replay events published before a subscriber connected.
 </details>
 
 

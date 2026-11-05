@@ -10,4 +10,6 @@ data:
   DB_PORT: "5432"
   DB_NAME: todos
   DB_USER: todos
+  NATS_URL: nats://my-nats.nats.svc.cluster.local:4222
+  NATS_SUBJECT: todo.events
   GCS_BUCKET: dwk-todo-backups-513110

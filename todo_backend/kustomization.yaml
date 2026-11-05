@@ -11,5 +11,5 @@ resources:
   - manifests/service.yaml
 images:
   - name: PROJECT/IMAGE
-    newName: gcr.io/dwk-gke-513110/todo-backend
-    newTag: "3.5"
+    newName: vikikone/todo-backend
+    newTag: "4.6"

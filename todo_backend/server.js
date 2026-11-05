@@ -1,8 +1,11 @@
 const http = require('http');
+const { connect } = require('nats');
 const { Pool } = require('pg');
 
 const port = Number(process.env.PORT);
 const todoMaxLength = Number(process.env.TODO_MAX_LENGTH);
+const natsUrl = process.env.NATS_URL;
+const natsSubject = process.env.NATS_SUBJECT;
 const databaseHost = process.env.DB_HOST;
 const databasePort = Number(process.env.DB_PORT);
 const databaseName = process.env.DB_NAME;
@@ -16,10 +19,22 @@ const pool = new Pool({
   password: databasePassword,
 });
 let isHealthy = true;
+let natsConnection;
 
 if (!Number.isFinite(port) || !Number.isFinite(todoMaxLength) || !databaseHost
-  || !Number.isFinite(databasePort) || !databaseName || !databaseUser || !databasePassword) {
+  || !Number.isFinite(databasePort) || !databaseName || !databaseUser || !databasePassword
+  || !natsUrl || !natsSubject) {
   throw new Error('Required todo backend configuration is missing or invalid');
+}
+
+async function initializeMessaging() {
+  natsConnection = await connect({ servers: natsUrl });
+  console.log(`Connected to NATS at ${natsUrl}`);
+}
+
+async function publishTodoEvent(event) {
+  natsConnection.publish(natsSubject, JSON.stringify(event));
+  await natsConnection.flush();
 }
 
 async function initializeDatabase() {
@@ -124,9 +139,10 @@ const server = http.createServer(async (request, response) => {
         sendJson(response, 404, { error: 'Todo not found' });
         return;
       }
+      await publishTodoEvent({ type: 'todo.updated', todo: result.rows[0] });
       sendJson(response, 200, result.rows[0]);
     } catch (error) {
-      console.error(`Failed to update todo: ${error.message}`);
+      console.error(`Failed to update todo or publish event: ${error.message}`);
       sendJson(response, 500, { error: 'Could not access todos' });
     }
     return;
@@ -144,16 +160,20 @@ const server = http.createServer(async (request, response) => {
       'INSERT INTO todos (content) VALUES ($1) RETURNING id, content, done',
       [todo.content.trim()],
     );
+    await publishTodoEvent({ type: 'todo.created', todo: result.rows[0] });
     console.log(`Todo created: ${JSON.stringify(result.rows[0])}`);
     sendJson(response, 201, result.rows[0]);
   } catch (error) {
-    console.error(`Failed to create todo: ${error.message}`);
+    console.error(`Failed to create todo or publish event: ${error.message}`);
     sendJson(response, 500, { error: 'Could not access todos' });
   }
 });
 
-initializeDatabase().then(() => {
+Promise.all([initializeDatabase(), initializeMessaging()]).then(() => {
   server.listen(port, '0.0.0.0', () => {
     console.log(`Todo backend listening on port ${port}`);
   });
+}).catch((error) => {
+  console.error(`Failed to initialize todo backend: ${error.message}`);
+  process.exitCode = 1;
 });
