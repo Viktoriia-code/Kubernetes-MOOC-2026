@@ -17,7 +17,8 @@ todo-broadcaster application in Argo CD, including its Kubernetes resources, syn
 
 The broadcaster is a separate microservice for Exercise 4.6. It listens for todo events from NATS and forwards them to an external chat service. The current implementation supports Discord-compatible webhooks.
 
-## Message flow
+<details>
+<summary>Message flow</summary>
 
 1. The todo backend saves or updates a todo in PostgreSQL.
 2. The backend publishes an event to the NATS subject `todo.events`.
@@ -25,8 +26,10 @@ The broadcaster is a separate microservice for Exercise 4.6. It listens for todo
 4. One broadcaster replica sends a message to the configured webhook.
 
 All six replicas use the same queue group. NATS therefore delivers each event to one replica instead of broadcasting the event six times.
+</details>
 
-## Configuration
+<details>
+<summary>Configuration</summary>
 
 Set `BROADCAST_URL` in [`manifests/configmap.yaml`](./manifests/configmap.yaml) to a valid Discord webhook URL. The other values must match the backend configuration:
 
@@ -46,8 +49,10 @@ The broadcaster sends Discord's supported webhook fields:
 ```
 
 Do not commit webhook URLs to a public repository. Prefer a Kubernetes Secret for production deployments, and rotate a webhook immediately if it has been exposed.
+</details>
 
-## Build and deploy
+<details>
+<summary>Build and deploy</summary>
 
 Install NATS in the cluster if it is not already running:
 
@@ -72,8 +77,10 @@ The image name and tag are defined in [`kustomization.yaml`](./kustomization.yam
 kubectl apply -k .
 kubectl rollout status deployment/todo-broadcaster -n project
 ```
+</details>
 
-## Verify the deployment
+<details>
+<summary>Verify the deployment</summary>
 
 Check that all replicas are ready:
 
@@ -102,11 +109,13 @@ Broadcast todo.created for todo 1
 
 <img width="991" height="490" alt="image" src="https://github.com/user-attachments/assets/f4bd38ec-8b5f-42e9-bbc8-b2f6050cdaef" />
 <img width="677" height="375" alt="image" src="https://github.com/user-attachments/assets/352eeca9-ede9-4539-9b06-14f5792150d5" />
+</details>
 
-## Troubleshooting
-
+<details>
+<summary>Troubleshooting</summary>
 - Confirm the backend and broadcaster use the same `NATS_URL` and `NATS_SUBJECT`.
 - Confirm the broadcaster deployment uses the image rendered by Kustomize: `kubectl kustomize .`.
 - If Discord returns an error, inspect the broadcaster logs for its HTTP status and response body.
 - If no event appears, check the backend logs for `Connected to NATS at ...` and create a new todo.
 - If pods cannot pull the image, verify that the image was pushed to a registry accessible by the Kubernetes cluster.
+</details>
