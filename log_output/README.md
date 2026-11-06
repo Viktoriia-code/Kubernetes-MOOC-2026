@@ -45,6 +45,9 @@ Created an application with the following configuration:
 
 Argo CD uses the Kubernetes manifests stored in GitHub as the desired state of the application.
 
+The final result:
+<img width="1612" height="886" alt="image" src="https://github.com/user-attachments/assets/bffb1ce8-30ba-48e5-8290-887f73418eb7" />
+
 ### 3. Configure Kubernetes Manifests
 
 Used Kustomize to manage the Log Output Deployment and Service.
@@ -74,6 +77,9 @@ The [`log-output-gitops.yaml`](../.github/workflows/log-output-gitops.yaml) work
 6. Commit the updated `log_output/kustomization.yaml` back to Git with a release message.
 
 The Docker Hub credentials are provided through the `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` GitHub Actions secrets. Argo CD detects the committed image update and deploys the new application version.
+
+<img width="962" height="817" alt="image" src="https://github.com/user-attachments/assets/da0d445a-e3ef-4ec5-be19-4025eb036a59" />
+
 
 ## GitOps Workflow
 
