@@ -174,4 +174,13 @@
       <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.7/log_output">Log output</a>
     </td>
   </tr>
+  <tr>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.8">4.8.</a></td>
+    <td>The project, step 24</td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.8/todo_app">Todo App</a> +
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.8/todo_backend">Todo Backend</a> +
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.8/todo_broadcaster">Broadcaster</a>
+    </td>
+  </tr>
 </table>

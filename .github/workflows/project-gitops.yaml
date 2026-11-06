@@ -1,0 +1,65 @@
+name: Todo Project GitOps
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'todo_app/**'
+      - 'todo_backend/**'
+      - 'todo_broadcaster/**'
+      - '.github/workflows/project-gitops.yaml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-publish-release:
+    name: Build, Push, Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and publish Todo App
+        run: |
+          docker build -t vikikone/todo-app:$GITHUB_SHA ./todo_app
+          docker push vikikone/todo-app:$GITHUB_SHA
+
+      - name: Build and publish Todo Backend
+        run: |
+          docker build -t vikikone/todo-backend:$GITHUB_SHA ./todo_backend
+          docker push vikikone/todo-backend:$GITHUB_SHA
+
+      - name: Build and publish Todo Broadcaster
+        run: |
+          docker build -t vikikone/todo-broadcaster:$GITHUB_SHA ./todo_broadcaster
+          docker push vikikone/todo-broadcaster:$GITHUB_SHA
+
+      - name: Set up Kustomize
+        uses: imranismail/setup-kustomize@v3
+
+      - name: Update Todo App image
+        run: kustomize edit set image PROJECT/IMAGE=vikikone/todo-app:$GITHUB_SHA
+        working-directory: todo_app
+
+      - name: Update Todo Backend image
+        run: kustomize edit set image PROJECT/IMAGE=vikikone/todo-backend:$GITHUB_SHA
+        working-directory: todo_backend
+
+      - name: Update Todo Broadcaster image
+        run: kustomize edit set image PROJECT/IMAGE=vikikone/todo-broadcaster:$GITHUB_SHA
+        working-directory: todo_broadcaster
+
+      - name: Commit updated image versions
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: 'todo_app/kustomization.yaml todo_backend/kustomization.yaml todo_broadcaster/kustomization.yaml'
+          message: 'Release Todo Project ${{ github.sha }}'
