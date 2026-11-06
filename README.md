@@ -167,4 +167,11 @@
       <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.6/todo_backend">Todo Backend</a>
     </td>
   </tr>
+  <tr>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.7">4.7.</a></td>
+    <td>Baby steps to GitOps</td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.7/log_output">Log output</a>
+    </td>
+  </tr>
 </table>

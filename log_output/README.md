@@ -1,291 +1,295 @@
-# Exercise 4.1 - Readines probe
+# 4.7 - Baby steps to GitOps
 
 ## Task
-> Create a ReadinessProbe for the Ping-pong application. It should be ready when it has a connection to the database.
-> 
-> And another ReadinessProbe for Log output application. It should be ready when it can receive data from the Ping-pong application.
-> 
-> Test that it works by applying everything but the database statefulset. The output of kubectl get po should look like this before the database is available:
-> 
-> ```text
-> NAME                             READY   STATUS    RESTARTS   AGE
-> logoutput-dep-7f49547cf4-ttj4f   1/2     Running   0          21s
-> pingpong-dep-9b698d6fb-jdgq9     0/1     Running   0          21s
-> ```
-> 
-> Adding the database should automatically move the READY states to 2/2 and 1/1 for Log output and Ping-pong respectively.
 
-## Readiness probe implementation
+> Move the Log output application to use GitOps so that when you commit to the repository, the application is automatically updated.
 
-The reader container uses `/status` as its readiness probe. The probe succeeds only when the shared files can be read and Ping-pong responds successfully. This keeps the Log output pod out of Service endpoints until both dependencies are available.
+## Technologies
 
-The following configuration was added to the reader container in[`manifests/deployment.yaml`](./manifests/deployment.yaml):
+* Kubernetes (k3d)
+* Argo CD
+* GitHub Actions
+* Docker Hub
+* Kustomize
 
-```yaml
-readinessProbe:
-  httpGet:
-    path: /status
-    port: 3000
-  initialDelaySeconds: 10
-  periodSeconds: 5
+## Implementation
+
+### 1. Install Argo CD
+
+Created a dedicated namespace and installed Argo CD in the local Kubernetes cluster.
+
+```bash
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 ```
 
-After Ping-pong and PostgreSQL are available, check the Log output readiness status:
+Accessed the Argo CD interface using port forwarding:
 
-```powershell
-kubectl get pods
-kubectl describe pod <pod-name>
-kubectl get endpoints log-output-svc
+```bash
+kubectl port-forward svc/argocd-server -n argocd 8082:443
 ```
 
-The Log output pod should show `2/2` in the `READY` column, and `log-output-svc` should have an endpoint. Screenshots of these results below:
+### 2. Configure the Argo CD Application
 
-<img width="896" height="306" alt="image" src="https://github.com/user-attachments/assets/cc58675b-a467-4488-a382-91f8889747da" />
-<img width="763" height="67" alt="image" src="https://github.com/user-attachments/assets/4c1097ba-3f4c-4154-a298-dd4c76786ca0" />
+Created an application with the following configuration:
 
-## Application
+| Setting | Value |
+|---|---|
+| Application name | log-output |
+| Project | default |
+| Repository | https://github.com/Viktoriia-code/Kubernetes-MOOC-2026 |
+| Target revision | main |
+| Source path | Log Output Kustomize directory |
+| Destination cluster | https://kubernetes.default.svc |
+| Initial sync policy | Manual |
 
-The Log output application consists of two containers in one Pod:
+Argo CD uses the Kubernetes manifests stored in GitHub as the desired state of the application.
 
-* `log-output-writer` generates a UUID at startup and appends a timestamp and the UUID to `/usr/src/app/files/status.txt` every five seconds.
-* `log-output-reader` reads the shared file and serves the contents through `GET /` and `GET /status`.
+### 3. Configure Kubernetes Manifests
 
-Both containers share an `emptyDir` volume mounted at `/usr/src/app/files`. The reader listens on port `3000` inside the container. The Kubernetes Service exposes that container through port `2345`.
+Used Kustomize to manage the Log Output Deployment and Service.
 
-When the reader serves `/` or `/status`, it also requests `http://ping-pong-svc.exercises:80/pings`. The `/pings` endpoint returns the current Ping-pong counter without incrementing it.
+The `kustomization.yaml` file defines the Kubernetes resources and container image references.
 
-The HTTPRoute routes and rewrites:
+During the initial synchronization, two issues were identified:
 
-* `/` and `/status` to the Log output application
-* `/pingpong` to the Ping-pong application as `/`
+* The local Kubernetes cluster did not recognize the Gateway API resources `Gateway` and `HTTPRoute`.
+* The Log Output Pod entered `ImagePullBackOff` because the specified Docker image tag was unavailable in Docker Hub.
 
-The Gateway rewrites `/pingpong` to `/`, so the Ping-pong application only needs to implement its counter endpoint at `/`.
+### 4. Enable Automatic Synchronization
 
-The response includes the ConfigMap values, the generated status file, and the Ping-pong count:
+After a successful initial deployment, change the Argo CD synchronization policy from Manual to Automatic.
+
+Argo CD then monitors the Git repository and applies configuration changes to the Kubernetes cluster automatically.
+
+### 5. Configure GitHub Actions
+
+The GitHub Actions workflow should:
+
+1. Check out the repository.
+2. Authenticate with Docker Hub using GitHub repository secrets.
+3. Build the Log Output Docker image.
+4. Push the image to Docker Hub using the Git commit SHA as its tag.
+5. Update the image reference in `kustomization.yaml`.
+6. Commit the updated configuration to GitHub.
+
+Argo CD detects the updated configuration and deploys the new application version.
+
+## GitOps Workflow
 
 ```text
-file content: this text is from file
-env variable: MESSAGE=hello world
-2026-05-18T12:15:17.705Z: 8523ecb1-c716-4cb6-a044-b9e83bb98e43.
-Ping / Pongs: 3
+Developer pushes code to GitHub
+              |
+              v
+       GitHub Actions
+              |
+              v
+    Build and push image
+         to Docker Hub
+              |
+              v
+   Update kustomization.yaml
+              |
+              v
+     Commit changes to Git
+              |
+              v
+     Argo CD detects changes
+              |
+              v
+    Kubernetes deployment
 ```
 
-## Kubernetes resources
+## Verification
 
-The manifests in [`manifests/`](.\manifests) create:
+To verify the completed implementation:
 
-* `log-output-dep`, a one-replica Deployment with writer and reader containers
-* `log-output-svc`, an internal ClusterIP Service on port `2345`
-* `log-output-config`, a ConfigMap containing `information.txt` and `MESSAGE`
-* `my-gateway`, the GKE Gateway resource
-* `my-route`, the HTTPRoute for Log output and Ping-pong
+1. Modify the Log Output application.
+2. Commit and push the changes to GitHub.
+3. Verify that GitHub Actions builds and publishes a new Docker image.
+4. Confirm that `kustomization.yaml` contains the updated image tag.
+5. Check that Argo CD automatically synchronizes the application.
+6. Verify that the updated Log Output Pod is running successfully.
 
-The Ping-pong manifests must also be deployed in the `exercises` namespace.
-The Ping-pong Service is a `ClusterIP` backend for the Gateway and exposes Service port `80`.
+## Status
 
-## Request flow
+Argo CD was installed and connected to the GitHub repository. Initial synchronization was attempted, and deployment issues were identified.
 
-```text
-http://GATEWAY_IP/
-        |
-        v
-GKE Gateway
-        |
-        v
-log-output-svc:2345
-        |
-        v
-log-output-reader:3000
-        |
-        +--> ping-pong-svc:80/pings
+The complete automated deployment workflow still requires verification.
 
-http://GATEWAY_IP/pingpong
-        |
-        v
-GKE Gateway
-        |
-        v
-ping-pong-svc:80
-        |
-        v
-ping-pong:3000
-```
+## Important steps
 
-## Project structure
+<details>
+<summary>Local Kubernetes deployment</summary>
 
-```text
-Kubernetes-MOOC-2026/
-└── log_output/
-    ├── manifests/
-    │   ├── configmap.yaml
-    │   ├── deployment.yaml
-    │   ├── service.yaml
-    │   ├── gateway.yaml
-    │   └── route.yaml
-    ├── Dockerfile
-    ├── generator.js
-    ├── server.js
-    └── package.json
-```
+The Kustomization is intended for a local Kubernetes cluster. It deploys the
+ConfigMap, Deployment, and Service from
+[`kustomization.yaml`](./kustomization.yaml). The GKE-specific Gateway and
+HTTPRoute manifests are kept in `manifests/` for the cloud version, but are not
+included in the local Kustomization.
 
-## Requirements
+Prerequisites:
 
-* A Google Cloud project with billing enabled or available credits
-* Google Cloud SDK (`gcloud`)
-* `kubectl`
-* Docker
-* A GKE cluster with Gateway API enabled
+- Docker
+- `kubectl`
+- A running local Kubernetes cluster, such as Docker Desktop Kubernetes,
+  Minikube, or Kind
+- A deployed Ping-pong Service named `ping-pong-svc` if the response should
+  include the Ping-pong count
 
-## 1. Configure Google Cloud
-
-Follow the Google Cloud setup instructions in the [Ping-pong README](../ping_pong/README.md), then return here to continue with the Gateway API setup.
-
-In order to use the Gateway API, run the command in order to enable it to the cluster:
-```powershell
-gcloud container clusters update dwk-cluster --location=europe-north1-b --gateway-api=standard
-```
-
-Verify the configuration:
-```powershell
-gcloud container clusters describe dwk-cluster --zone=europe-north1-b --project=dwk-gke-513110 --format="yaml(networkConfig.gatewayApiConfig)"
-```
-Expected:
-```
-gatewayApiConfig:
-  channel: CHANNEL_STANDARD
-```
-## 2. Deploy Ping-pong
-
-Deploy Ping-pong before Log output because the reader requests the Ping-pong
-Service when serving `/` and `/status`.
-
-Follow the deployment instructions in the [Ping-pong README](../ping_pong/README.md), then return here to deploy Log output and the shared Gateway API resources.
-
-## 3. Build and publish the Log output image
-
-From this directory, build the image:
+Apply the resources:
 
 ```powershell
-docker build -t gcr.io/dwk-gke-513110/log-output:v4.1 .
-```
-
-Push it to Docker Hub if the image is not already available there:
-
-```powershell
-docker push gcr.io/dwk-gke-513110/log-output:v4.1
-```
-
-If you use a different registry or tag, update the image fields for both
-containers in [`manifests/deployment.yaml`](.\manifests\deployment.yaml).
-
-## 4. Deploy Log output and the Gateway API resources
-
-From the repository root, apply the Log output manifests to the same namespace:
-
-```powershell
-kubectl apply -f .\manifests
+kubectl apply -k .
 kubectl rollout status deployment/log-output-dep
 ```
 
-Check all resources:
+Check the workload:
 
 ```powershell
-kubectl get pods,svc,deployments,gateway,httproute
+kubectl get deployment,pods,svc
 ```
 
-GKE needs some time to provision the external Gateway address. Watch it until the `ADDRESS` column is populated:
+Forward the Service to your computer:
 
 ```powershell
-kubectl get gateway my-gateway --watch
+kubectl port-forward service/log-output-svc 3000:2345
 ```
 
-## 5. Test the applications through Gateway API
+Open [http://localhost:3000](http://localhost:3000). Keep the port-forward
+command running while using the application.
 
-Get the external Gateway address:
+You can also test it with PowerShell:
 
 ```powershell
-kubectl get gateway my-gateway
+curl.exe http://localhost:3000/
+curl.exe http://localhost:3000/status
 ```
 
-Test Log output:
+The response contains the ConfigMap value, generated status information, and
+the Ping-pong count when the Ping-pong Service is available.
+</details>
+
+<details>
+<summary>Build and use a local image</summary>
+
+The manifests currently use `vikikone/log-output:v2.5`. If you change the
+source code and use a local cluster, build an image in the runtime used by
+that cluster.
+
+For Docker Desktop Kubernetes:
 
 ```powershell
-curl.exe "http://$GATEWAY_IP/"
-curl.exe "http://$GATEWAY_IP/status"
+docker build -t vikikone/log-output:v2.5 .
+kubectl rollout restart deployment/log-output-dep
+kubectl rollout status deployment/log-output-dep
 ```
 
-Test Ping-pong:
+For Minikube, build inside Minikube's Docker daemon:
 
 ```powershell
-curl.exe "http://$GATEWAY_IP/pingpong"
+minikube docker-env | Invoke-Expression
+docker build -t vikikone/log-output:v2.5 .
+kubectl rollout restart deployment/log-output-dep
 ```
 
-The Ping-pong counter should increase between requests. The Log output response should include the current counter without incrementing it.
-
-## 6. Verify the shared status file
-
-Read the status file from the reader container:
+For Kind, load the image into the cluster:
 
 ```powershell
-kubectl exec deployment/log-output-dep -c log-output-reader -- cat /usr/src/app/files/status.txt
+docker build -t vikikone/log-output:v2.5 .
+kind load docker-image vikikone/log-output:v2.5
+kubectl rollout restart deployment/log-output-dep
+```
+</details>
+
+<details>
+<summary>Verify the shared file</summary>
+
+The writer and reader containers use the same volume. Inspect the file from
+the reader container:
+
+```powershell
+kubectl exec deployment/log-output-dep -c log-output-reader -- `
+  cat /usr/src/app/files/status.txt
 ```
 
-Run the command again after a few seconds. A new timestamped line should appear, while the UUID remains the same for the lifetime of the writer container.
+Run the command again after a few seconds. A new line should appear, while the
+UUID remains unchanged until the writer container restarts.
 
-List the shared volume:
+View both container logs:
 
 ```powershell
-kubectl exec deployment/log-output-dep -c log-output-reader -- ls -l /usr/src/app/files
+kubectl logs deployment/log-output-dep -c log-output-writer
+kubectl logs deployment/log-output-dep -c log-output-reader
 ```
+</details>
 
-## 7. Troubleshooting
+<details>
+<summary>Readiness</summary>
 
-Inspect the Gateway, HTTPRoute, Services, Pods, and recent events:
+The reader has a readiness probe at `/status`. It becomes ready only when it
+can read the shared file and successfully contact the Ping-pong Service. Until
+then, the Pod may show `1/2` ready and the Service will not route traffic to
+the reader.
+
+Check readiness and events:
 
 ```powershell
-kubectl describe gateway my-gateway
-kubectl describe httproute my-route
-kubectl get svc
 kubectl get pods
+kubectl describe pod -l app=log-output
+kubectl get endpoints log-output-svc
 kubectl get events --sort-by=.lastTimestamp
 ```
 
-View Log output logs:
+If the reader is not ready, verify that Ping-pong is running and exposes the
+expected Service:
 
 ```powershell
-kubectl logs deployment/log-output-dep -c log-output-reader
-kubectl logs deployment/log-output-dep -c log-output-writer
-```
-
-If the reader cannot contact Ping-pong, check the Ping-pong Service and Pod:
-
-```powershell
-kubectl get endpoints ping-pong-svc
 kubectl get pods -l app=ping-pong
+kubectl get service ping-pong-svc
+kubectl get endpoints ping-pong-svc
 kubectl logs deployment/ping-pong
 ```
+</details>
 
-## 8. Stop and restart Log output
+<details>
+<summary>Stop and remove</summary>
 
-To stop Log output while keeping its Kubernetes resources:
+Scale the application down temporarily:
 
 ```powershell
 kubectl scale deployment/log-output-dep --replicas=0
 ```
 
-Restart it with:
+Restore it:
 
 ```powershell
 kubectl scale deployment/log-output-dep --replicas=1
 kubectl rollout status deployment/log-output-dep
 ```
 
-## 9. Avoid unnecessary GKE costs
-
-The GKE Gateway and cluster can incur charges. Delete the cluster when it is no longer needed:
+Remove the Log output resources:
 
 ```powershell
-gcloud container clusters delete dwk-cluster --zone=europe-north1-b
+kubectl delete -k .
 ```
+</details>
 
-Deleting the cluster also deletes the deployed Kubernetes resources. When continuing the exercise, recreate the cluster, fetch its credentials, and apply the manifests again.
+<details>
+<summary>Project structure</summary>
+
+```text
+log_output/
+├── Dockerfile
+├── generator.js
+├── server.js
+├── package.json
+├── kustomization.yaml
+└── manifests/
+    ├── configmap.yaml
+    ├── deployment.yaml
+    ├── service.yaml
+    ├── gateway.yaml       # GKE only; excluded from local Kustomize
+    └── route.yaml         # GKE only; excluded from local Kustomize
+```
+</details>
