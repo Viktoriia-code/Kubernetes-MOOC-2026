@@ -29,6 +29,9 @@ The backend publishes an event only after the corresponding PostgreSQL operation
 
 An update uses `type: "todo.updated"` and includes the new `done` value. The [`todo_broadcaster`](../todo_broadcaster/README.md) service subscribes to this subject and forwards each event to the configured chat webhook.
 
+<img width="991" height="490" alt="image" src="https://github.com/user-attachments/assets/5231a371-faba-4740-aa6e-d9df964ee474" />
+<img width="677" height="375" alt="image" src="https://github.com/user-attachments/assets/352eeca9-ede9-4539-9b06-14f5792150d5" />
+
 ## Application
 The Todo backend is a Node.js HTTP service used by the project frontend. It provides a small JSON API for reading, creating, and completing todo items. Todo data is stored in PostgreSQL instead of in application memory. The project frontend renders URLs in todo content as clickable links.
 

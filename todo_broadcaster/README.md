@@ -112,6 +112,9 @@ Create or update a todo after the broadcaster is running. Core NATS does not rep
 Broadcast todo.created for todo 1
 ```
 
+<img width="991" height="490" alt="image" src="https://github.com/user-attachments/assets/f4bd38ec-8b5f-42e9-bbc8-b2f6050cdaef" />
+<img width="677" height="375" alt="image" src="https://github.com/user-attachments/assets/352eeca9-ede9-4539-9b06-14f5792150d5" />
+
 ## Troubleshooting
 
 - Confirm the backend and broadcaster use the same `NATS_URL` and `NATS_SUBJECT`.
