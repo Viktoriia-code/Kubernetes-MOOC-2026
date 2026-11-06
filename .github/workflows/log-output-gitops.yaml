@@ -1,0 +1,46 @@
+name: Log Output GitOps
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'log_output/**'
+      - '.github/workflows/log-output-gitops.yaml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-publish:
+    name: Build, Push, Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and publish Log Output
+        run: |
+          docker build -t vikikone/log-output:$GITHUB_SHA ./log_output
+          docker push vikikone/log-output:$GITHUB_SHA
+
+      - name: Set up Kustomize
+        uses: imranismail/setup-kustomize@v3
+
+      - name: Update image version
+        working-directory: ./log_output
+        run: |
+          kustomize edit set image vikikone/log-output=vikikone/log-output:$GITHUB_SHA
+
+      - name: Commit updated image version
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: 'log_output/kustomization.yaml'
+          message: 'Release Log Output ${{ github.sha }}'

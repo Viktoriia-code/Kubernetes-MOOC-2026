@@ -1,7 +1,7 @@
 name: Release project
 
 on:
-  push:
+  workflow_dispatch:
 
 permissions:
   contents: read
