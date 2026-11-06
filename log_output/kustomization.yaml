@@ -4,8 +4,6 @@ resources:
   - manifests/configmap.yaml
   - manifests/deployment.yaml
   - manifests/service.yaml
-  - manifests/gateway.yaml
-  - manifests/route.yaml
 images:
   - name: vikikone/log-output
     newName: vikikone/log-output
