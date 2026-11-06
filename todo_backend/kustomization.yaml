@@ -12,4 +12,4 @@ resources:
 images:
 - name: PROJECT/IMAGE
   newName: vikikone/todo-backend
-  newTag: 0eda604eab2f93bdabafb08b5e4dc1ca6f52d646
+  newTag: ac894c58ff4bb3d4e023987f852fade7cc2a650e
