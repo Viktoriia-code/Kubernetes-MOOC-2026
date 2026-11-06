@@ -7,6 +7,13 @@
 
 GitHub Actions runs the [`project-gitops.yaml`](../.github/workflows/project-gitops.yaml) workflow for changes pushed to `main`. It builds and pushes the Todo Backend image to Docker Hub, updates this Kustomization with the commit SHA, and commits the new image reference. Argo CD then detects the Git change and deploys the updated backend to the cluster.
 
+All applications managed by Argo CD:
+<img width="1602" height="auto" alt="image" src="https://github.com/user-attachments/assets/47d7f498-5626-4b00-a668-9fdc633525ce" />
+
+todo-app application in Argo CD, including its Kubernetes resources, synchronization status, and health status:
+<img width="1607" height="auto" alt="image" src="https://github.com/user-attachments/assets/610316b3-8648-4363-a669-8f94f72452ff" />
+
+
 ## Application
 
 Each todo is displayed as a card with its content and a status button:
