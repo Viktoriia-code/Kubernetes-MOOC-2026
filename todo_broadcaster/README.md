@@ -7,6 +7,12 @@
 
 GitHub Actions runs the [`project-gitops.yaml`](../.github/workflows/project-gitops.yaml) workflow for changes pushed to `main`. It builds and pushes the Todo Backend image to Docker Hub, updates this Kustomization with the commit SHA, and commits the new image reference. Argo CD then detects the Git change and deploys the updated backend to the cluster.
 
+All applications managed by Argo CD:
+<img width="1602" height="auto" alt="image" src="https://github.com/user-attachments/assets/47d7f498-5626-4b00-a668-9fdc633525ce" />
+
+todo-broadcaster application in Argo CD, including its Kubernetes resources, synchronization status, and health status:
+<img width="1607" height="auto" alt="image" src="https://github.com/user-attachments/assets/0edf05bf-5a14-4bd5-9bb1-c1ed52de296f" />
+
 ## Todo broadcaster
 
 The broadcaster is a separate microservice for Exercise 4.6. It listens for todo events from NATS and forwards them to an external chat service. The current implementation supports Discord-compatible webhooks.
