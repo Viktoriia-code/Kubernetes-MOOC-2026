@@ -1,10 +1,10 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - manifests/configmap.yaml
-  - manifests/deployment.yaml
-  - manifests/service.yaml
+- manifests/configmap.yaml
+- manifests/deployment.yaml
+- manifests/service.yaml
 images:
-  - name: vikikone/log-output
-    newName: vikikone/log-output
-    newTag: "v4.7"
+- name: vikikone/log-output
+  newName: vikikone/log-output
+  newTag: 1444dedf0d5b861c9d4558c082117281a9c2e65d
