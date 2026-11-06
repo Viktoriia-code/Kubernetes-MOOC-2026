@@ -1,9 +1,13 @@
-# Exercise 4.5 - The project, step 22
+# Exercise 4.8 - The project, step 24
 
 ## Task
-> Speaking of updating. Our todo application could use "Done" field for todos that are already done. It should be a PUT request to `/todos/<id>`.
+> Move the project to use GitOps so that when you commit to the repository, the application is automatically updated. In this exercise, it is enough that the main branch is deployed to cluster.
 
-## Implementation
+## Task implementation
+
+GitHub Actions runs the [`project-gitops.yaml`](../.github/workflows/project-gitops.yaml) workflow for changes pushed to `main`. It builds and pushes the Todo Backend image to Docker Hub, updates this Kustomization with the commit SHA, and commits the new image reference. Argo CD then detects the Git change and deploys the updated backend to the cluster.
+
+## Application
 
 Each todo is displayed as a card with its content and a status button:
 

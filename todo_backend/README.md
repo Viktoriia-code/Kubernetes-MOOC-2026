@@ -1,10 +1,14 @@
-# 4.6 - The project, step 23
+# Exercise 4.8 - The project, step 24
 
 ## Task
+> Move the project to use GitOps so that when you commit to the repository, the application is automatically updated. In this exercise, it is enough that the main branch is deployed to cluster.
 
-> Create a new separate service for sending status messages of the todos to some chat service. Let's call the new service "broadcaster".
+## Task implementation
 
-## Implementation
+GitHub Actions runs the [`project-gitops.yaml`](../.github/workflows/project-gitops.yaml) workflow for changes pushed to `main`. It builds and pushes the Todo Backend image to Docker Hub, updates this Kustomization with the commit SHA, and commits the new image reference. Argo CD then detects the Git change and deploys the updated backend to the cluster.
+
+## Application
+The Todo backend is a Node.js HTTP service used by the project frontend. It provides a small JSON API for reading, creating, and completing todo items. Todo data is stored in PostgreSQL instead of in application memory. The project frontend renders URLs in todo content as clickable links.
 
 In addition to serving the todo API, the backend publishes todo status events to NATS. The NATS connection and subject are configured in
 [`manifests/configmap.yaml`](./manifests/configmap.yaml):
@@ -31,9 +35,6 @@ An update uses `type: "todo.updated"` and includes the new `done` value. The [`t
 
 <img width="991" height="490" alt="image" src="https://github.com/user-attachments/assets/5231a371-faba-4740-aa6e-d9df964ee474" />
 <img width="677" height="375" alt="image" src="https://github.com/user-attachments/assets/352eeca9-ede9-4539-9b06-14f5792150d5" />
-
-## Application
-The Todo backend is a Node.js HTTP service used by the project frontend. It provides a small JSON API for reading, creating, and completing todo items. Todo data is stored in PostgreSQL instead of in application memory. The project frontend renders URLs in todo content as clickable links.
 
 ## Deploy to Google Kubernetes Engine
 
