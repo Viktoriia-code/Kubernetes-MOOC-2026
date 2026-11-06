@@ -64,16 +64,16 @@ Argo CD then monitors the Git repository and applies configuration changes to th
 
 ### 5. Configure GitHub Actions
 
-The GitHub Actions workflow should:
+The [`log-output-gitops.yaml`](../.github/workflows/log-output-gitops.yaml) workflow runs when changes are pushed to `main` and affect either the `log_output/` directory or the workflow itself. It:
 
 1. Check out the repository.
 2. Authenticate with Docker Hub using GitHub repository secrets.
 3. Build the Log Output Docker image.
 4. Push the image to Docker Hub using the Git commit SHA as its tag.
 5. Update the image reference in `kustomization.yaml`.
-6. Commit the updated configuration to GitHub.
+6. Commit the updated `log_output/kustomization.yaml` back to Git with a release message.
 
-Argo CD detects the updated configuration and deploys the new application version.
+The Docker Hub credentials are provided through the `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` GitHub Actions secrets. Argo CD detects the committed image update and deploys the new application version.
 
 ## GitOps Workflow
 
@@ -113,9 +113,9 @@ To verify the completed implementation:
 
 ## Status
 
-Argo CD was installed and connected to the GitHub repository. Initial synchronization was attempted, and deployment issues were identified.
+Argo CD is installed and connected to the GitHub repository. The GitHub Actions workflow for building, publishing, and releasing Log Output is configured. Initial synchronization was attempted, and deployment issues were identified.
 
-The complete automated deployment workflow still requires verification.
+The complete automated deployment workflow still requires end-to-end verification.
 
 ## Important steps
 
