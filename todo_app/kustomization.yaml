@@ -9,4 +9,4 @@ resources:
 images:
 - name: PROJECT/IMAGE
   newName: vikikone/todo-app
-  newTag: 9018f74bf83ea438bd44b37668936b89af6ac7f1
+  newTag: 1809a244360b99e75ad3d804af688dc9219a7745
