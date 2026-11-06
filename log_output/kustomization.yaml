@@ -7,4 +7,4 @@ resources:
 images:
 - name: vikikone/log-output
   newName: vikikone/log-output
-  newTag: 1444dedf0d5b861c9d4558c082117281a9c2e65d
+  newTag: 26e760e74bed783a4c3d1430e1d5a90db613689a
