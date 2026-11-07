@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - '*'
     paths:
       - 'todo_app/**'
       - 'todo_backend/**'
@@ -11,12 +13,15 @@ on:
       - '.github/workflows/project-gitops.yaml'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  build-publish-release:
-    name: Build, Push, Release
+  build-publish:
+    name: Build and Push
     runs-on: ubuntu-latest
+
+    env:
+      IMAGE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || github.sha }}
 
     steps:
       - name: Checkout
@@ -30,36 +35,15 @@ jobs:
 
       - name: Build and publish Todo App
         run: |
-          docker build -t vikikone/todo-app:$GITHUB_SHA ./todo_app
-          docker push vikikone/todo-app:$GITHUB_SHA
+          docker build -t vikikone/todo-app:$IMAGE_TAG ./todo_app
+          docker push vikikone/todo-app:$IMAGE_TAG
 
       - name: Build and publish Todo Backend
         run: |
-          docker build -t vikikone/todo-backend:$GITHUB_SHA ./todo_backend
-          docker push vikikone/todo-backend:$GITHUB_SHA
+          docker build -t vikikone/todo-backend:$IMAGE_TAG ./todo_backend
+          docker push vikikone/todo-backend:$IMAGE_TAG
 
       - name: Build and publish Todo Broadcaster
         run: |
-          docker build -t vikikone/todo-broadcaster:$GITHUB_SHA ./todo_broadcaster
-          docker push vikikone/todo-broadcaster:$GITHUB_SHA
-
-      - name: Set up Kustomize
-        uses: imranismail/setup-kustomize@v3
-
-      - name: Update Todo App image
-        run: kustomize edit set image PROJECT/IMAGE=vikikone/todo-app:$GITHUB_SHA
-        working-directory: todo_app
-
-      - name: Update Todo Backend image
-        run: kustomize edit set image PROJECT/IMAGE=vikikone/todo-backend:$GITHUB_SHA
-        working-directory: todo_backend
-
-      - name: Update Todo Broadcaster image
-        run: kustomize edit set image PROJECT/IMAGE=vikikone/todo-broadcaster:$GITHUB_SHA
-        working-directory: todo_broadcaster
-
-      - name: Commit updated image versions
-        uses: EndBug/add-and-commit@v9
-        with:
-          add: 'todo_app/kustomization.yaml todo_backend/kustomization.yaml todo_broadcaster/kustomization.yaml'
-          message: 'Release Todo Project ${{ github.sha }}'
+          docker build -t vikikone/todo-broadcaster:$IMAGE_TAG ./todo_broadcaster
+          docker push vikikone/todo-broadcaster:$IMAGE_TAG
