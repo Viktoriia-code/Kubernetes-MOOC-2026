@@ -12,8 +12,8 @@ patches:
 
 images:
   - name: vikikone/todo-app
-    newTag: latest
+    newTag: "f5a527ab86747ae5ca180bedcd62bcab8c2feada"
   - name: vikikone/todo-backend
-    newTag: latest
+    newTag: "f5a527ab86747ae5ca180bedcd62bcab8c2feada"
   - name: vikikone/todo-broadcaster
-    newTag: latest
+    newTag: "f5a527ab86747ae5ca180bedcd62bcab8c2feada"
