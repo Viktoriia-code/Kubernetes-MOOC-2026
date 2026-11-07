@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/Viktoriia-code/Kubernetes-MOOC-2026.git
     path: environments/overlays/production
-    targetRevision: main
+    targetRevision: ">=4.9.0"
   destination:
     server: https://kubernetes.default.svc
     namespace: production
@@ -16,3 +16,5 @@ spec:
     automated:
       prune: true
       selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
