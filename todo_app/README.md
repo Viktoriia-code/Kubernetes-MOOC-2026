@@ -24,7 +24,7 @@ Each todo is displayed as a card with its content and a status button:
   displayed with a strikethrough.
 - Todo links are rendered as clickable links and open in a new browser tab.
 
-<img width="802" height="696" alt="Screenshot 2026-11-05 150442" src="https://github.com/user-attachments/assets/9a6567db-84a4-42f3-9093-a9292b200198" />
+<img width="802" height="auto" alt="Screenshot 2026-11-05 150442" src="https://github.com/user-attachments/assets/9a6567db-84a4-42f3-9093-a9292b200198" />
 
 The request body contains a JSON boolean:
 
