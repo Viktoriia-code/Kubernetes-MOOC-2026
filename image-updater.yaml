@@ -24,3 +24,21 @@ spec:
           imageName: vikikone/todo-broadcaster:staging
           commonUpdateSettings:
             updateStrategy: digest
+        
+    # Production
+    - namePattern: todo-project-production
+      images:
+        - alias: app
+          imageName: vikikone/todo-app
+          commonUpdateSettings:
+            updateStrategy: semver
+
+        - alias: backend
+          imageName: vikikone/todo-backend
+          commonUpdateSettings:
+            updateStrategy: semver
+
+        - alias: broadcaster
+          imageName: vikikone/todo-broadcaster
+          commonUpdateSettings:
+            updateStrategy: semver
