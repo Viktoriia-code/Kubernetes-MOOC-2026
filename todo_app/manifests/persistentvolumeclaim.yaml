@@ -4,7 +4,7 @@ metadata:
   name: image-cache-claim
   namespace: project
 spec:
-  storageClassName: local-path
+  storageClassName: image-cache
   accessModes:
     - ReadWriteOnce
   resources:
