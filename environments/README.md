@@ -106,10 +106,12 @@ The broadcaster behaves differently depending on the environment.
 **Staging:**
 
 Messages are written to the application logs without being forwarded to an external service.
+<img width="872" height="217" alt="image" src="https://github.com/user-attachments/assets/5f46b40f-ce1c-4397-a65b-d83f7cf4352f" />
 
 **Production:**
 
 Messages are forwarded to a Discord webhook. The webhook URL is provided through a Kubernetes Secret managed outside Argo CD.
+<img width="561" height="552" alt="image" src="https://github.com/user-attachments/assets/f20f8c83-d098-4111-a1b8-78c92206be01" />
 
 ## Database Backups
 
@@ -165,6 +167,8 @@ Staging must not contain `todo-db-backup`; production must contain it. Existing 
 ## Result
 
 The project has two independent Kubernetes environments with separate namespaces and configurations.
+
+<img width="842" height="542" alt="image" src="https://github.com/user-attachments/assets/15e8d0b5-b661-4a03-9f90-b4e76fc108c8" />
 
 Staging is configured to receive updates from the `main` branch, while production is configured to receive tagged releases.
 
