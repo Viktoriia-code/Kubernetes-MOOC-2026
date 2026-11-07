@@ -119,6 +119,25 @@ Database backups are disabled in staging to avoid unnecessary backup operations.
 
 Production has database backups enabled to support data recovery.
 
+Database backups are disabled in staging.
+
+Verification command:
+
+```powershell
+kubectl get cronjobs -n staging
+```
+
+Output:
+
+```text
+NAME            SCHEDULE    SUSPEND   ACTIVE
+todo-reminder   0 * * * *   False     0
+```
+
+<img width="726" height="64" alt="image" src="https://github.com/user-attachments/assets/007df349-fe37-4494-9b09-391c44f5eec6" />
+
+Only the `todo-reminder` CronJob exists in staging. No database backup CronJob is configured.
+
 ## Tools and Technologies
 
 * **Kubernetes:** Runs and isolates the application environments.
