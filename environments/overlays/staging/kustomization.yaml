@@ -4,17 +4,20 @@ kind: Kustomization
 namespace: staging
 
 resources:
-  - ../../base
-  - namespace.yaml
+- ../../base
+- namespace.yaml
 
 patches:
-  - path: broadcaster-patch.yaml
-  - path: remove-backup-cronjob.yaml
+- path: broadcaster-patch.yaml
+- path: remove-backup-cronjob.yaml
 
 images:
-  - name: vikikone/todo-app
-    newTag: latest
-  - name: vikikone/todo-backend
-    newTag: latest
-  - name: vikikone/todo-broadcaster
-    newTag: latest
+- name: vikikone/todo-app
+  newName: vikikone/todo-app
+  newTag: f5a527ab86747ae5ca180bedcd62bcab8c2feada
+- name: vikikone/todo-backend
+  newName: vikikone/todo-backend
+  newTag: f5a527ab86747ae5ca180bedcd62bcab8c2feada
+- name: vikikone/todo-broadcaster
+  newName: vikikone/todo-broadcaster
+  newTag: f5a527ab86747ae5ca180bedcd62bcab8c2feada
