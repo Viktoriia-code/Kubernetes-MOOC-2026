@@ -1,4 +1,3 @@
-
 apiVersion: argocd-image-updater.argoproj.io/v1alpha1
 kind: ImageUpdater
 metadata:
@@ -9,23 +8,19 @@ spec:
     method: argocd
 
   applicationRefs:
-    - namePattern: todo-app
+    - namePattern: todo-project-staging
       images:
         - alias: app
-          imageName: vikikone/todo-app
+          imageName: vikikone/todo-app:staging
           commonUpdateSettings:
-            updateStrategy: newest-build
+            updateStrategy: digest
 
-    - namePattern: todo-backend
-      images:
         - alias: backend
-          imageName: vikikone/todo-backend
+          imageName: vikikone/todo-backend:staging
           commonUpdateSettings:
-            updateStrategy: newest-build
+            updateStrategy: digest
 
-    - namePattern: todo-broadcaster
-      images:
         - alias: broadcaster
-          imageName: vikikone/todo-broadcaster
+          imageName: vikikone/todo-broadcaster:staging
           commonUpdateSettings:
-            updateStrategy: newest-build
+            updateStrategy: digest
