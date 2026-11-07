@@ -4,5 +4,5 @@ metadata:
   name: todo-reminder-config
   namespace: project
 data:
-  TODO_BACKEND_URL: http://todo-backend-svc.project:2345/todos
+  TODO_BACKEND_URL: http://todo-backend-svc:2345/todos
   RANDOM_WIKIPEDIA_URL: https://en.wikipedia.org/wiki/Special:Random

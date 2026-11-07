@@ -3,11 +3,18 @@ const { connect, StringCodec } = require('nats');
 const natsUrl = process.env.NATS_URL;
 const natsSubject = process.env.NATS_SUBJECT;
 const queueGroup = process.env.NATS_QUEUE_GROUP;
+const broadcastMode = process.env.BROADCAST_MODE || 'external';
 const broadcastUrl = process.env.BROADCAST_URL;
 const stringCodec = StringCodec();
 
-if (!natsUrl || !natsSubject || !queueGroup || !broadcastUrl) {
+if (!natsUrl || !natsSubject || !queueGroup) {
   throw new Error('Required broadcaster configuration is missing');
+}
+if (broadcastMode === 'external' && !broadcastUrl) {
+  throw new Error('BROADCAST_URL is required in external mode');
+}
+if (broadcastMode !== 'external' && broadcastMode !== 'log') {
+  throw new Error(`Unsupported BROADCAST_MODE: ${broadcastMode}`);
 }
 
 async function sendToExternalService(event) {
@@ -43,8 +50,12 @@ async function start() {
   for await (const message of subscription) {
     try {
       const event = JSON.parse(stringCodec.decode(message.data));
-      await sendToExternalService(event);
-      console.log(`Broadcast ${event.type} for todo ${event.todo.id}`);
+      if (broadcastMode === 'log') {
+        console.log(`Received ${event.type} for todo ${event.todo.id}: ${JSON.stringify(event)}`);
+      } else {
+        await sendToExternalService(event);
+        console.log(`Broadcast ${event.type} for todo ${event.todo.id}`);
+      }
     } catch (error) {
       console.error(`Failed to broadcast NATS message: ${error.message}`);
     }

@@ -13,7 +13,7 @@ on:
       - '.github/workflows/project-gitops.yaml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-publish:
@@ -47,3 +47,26 @@ jobs:
         run: |
           docker build -t vikikone/todo-broadcaster:$IMAGE_TAG ./todo_broadcaster
           docker push vikikone/todo-broadcaster:$IMAGE_TAG
+
+      - name: Check out main for production release
+        if: github.ref_type == 'tag'
+        run: |
+          git fetch origin main
+          git checkout main
+
+      - name: Set up Kustomize
+        uses: imranismail/setup-kustomize@v3
+
+      - name: Update environment images
+        run: |
+          kustomize edit set image \
+            vikikone/todo-app=vikikone/todo-app:$IMAGE_TAG \
+            vikikone/todo-backend=vikikone/todo-backend:$IMAGE_TAG \
+            vikikone/todo-broadcaster=vikikone/todo-broadcaster:$IMAGE_TAG
+        working-directory: environments/overlays/${{ github.ref_type == 'tag' && 'production' || 'staging' }}
+
+      - name: Commit environment image versions
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: "environments/overlays/${{ github.ref_type == 'tag' && 'production' || 'staging' }}/kustomization.yaml"
+          message: 'Release Todo Project ${{ env.IMAGE_TAG }}'

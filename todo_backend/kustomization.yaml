@@ -6,7 +6,6 @@ resources:
 - manifests/backup-cronjob.yaml
 - manifests/cronjob.yaml
 - manifests/deployment.yaml
-- manifests/postgres-secret.yaml
 - manifests/postgres.yaml
 - manifests/service.yaml
 images:

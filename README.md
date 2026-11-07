@@ -183,4 +183,11 @@
       <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.8/todo_broadcaster">Broadcaster</a>
     </td>
   </tr>
+  <tr>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.9">4.9.</a></td>
+    <td>The project, step 25</td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.9/environments">GitOps environments</a>
+    </td>
+  </tr>
 </table>
