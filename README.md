@@ -190,4 +190,11 @@
       <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/4.9/environments">GitOps environments</a>
     </td>
   </tr>
+  <tr>
+    <td><a href="https://github.com/Viktoriia-code/todo-project-config/tree/4.10">4.10.</a></td>
+    <td>The project, the grande finale</td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/todo-project-config/tree/4.10">Todo config</a>
+    </td>
+  </tr>
 </table>
