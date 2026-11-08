@@ -1,0 +1,12 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: dummy-site-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: dummy-site-controller
+subjects:
+  - kind: ServiceAccount
+    name: dummy-site-controller-account
+    namespace: default

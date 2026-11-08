@@ -198,3 +198,15 @@
     </td>
   </tr>
 </table>
+
+### Chapter 6
+
+<table>
+  <tr>
+    <td><a href="https://github.com/Viktoriia-code/todo-project-config/tree/5.1">5.1.</a></td>
+    <td>DIY CRD & Controller</td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/todo-project-config/tree/5.1/dummy_site">Dummy site</a>
+    </td>
+  </tr>
+</table>
