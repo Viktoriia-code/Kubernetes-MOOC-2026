@@ -209,4 +209,11 @@
       <a href="https://github.com/Viktoriia-code/todo-project-config/tree/5.1/dummy_site">Dummy site</a>
     </td>
   </tr>
+  <tr>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/5.2">5.2.</a></td>
+    <td>Getting started with Istio service mesh</td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/5.2/service_mesh">Service mesh</a>
+    </td>
+  </tr>
 </table>
