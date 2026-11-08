@@ -111,6 +111,7 @@ Verify that Kubernetes recognizes the resource:
 ```powershell
 kubectl get dummysites
 ```
+<img width="566" height="auto" alt="image" src="https://github.com/user-attachments/assets/8d45d051-03bb-4330-bc0c-5f402c1babe1" />
 
 ### 4. Verify Generated Resources
 
@@ -147,6 +148,12 @@ Open the website in your browser:
 http://localhost:8080
 
 The page displays the HTML copied from https://example.com/.
+
+<img width="961" height="auto" alt="image" src="https://github.com/user-attachments/assets/84ee922e-7159-4135-8cc1-740c4fcd0ae7" />
+
+Example with url website https://en.wikipedia.org/wiki/Kubernetes:
+<img width="1897" height="auto" alt="image" src="https://github.com/user-attachments/assets/62b308a7-c768-4a4b-a8c6-17fefed7b842" />
+
 
 ## Controller Functionality
 
