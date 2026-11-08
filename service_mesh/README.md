@@ -30,8 +30,10 @@ Select the cluster and verify its nodes:
 kubectl config use-context k3d-istio
 kubectl get nodes
 ```
+<img width="1141" height="auto" alt="Screenshot 2026-11-08 201506" src="https://github.com/user-attachments/assets/0f1761b6-6cd0-405d-875a-a46a31f6757a" />
 
-All subsequent commands should run against the `k3d-istio` context.
+<img width="1627" height="auto" alt="Screenshot 2026-11-08 202715" src="https://github.com/user-attachments/assets/fd7d16cb-b445-4868-bba0-af6dcdc12f11" />
+
 
 ## 2. Install the Istio CLI
 
@@ -88,6 +90,8 @@ kubectl get pods -n istio-system
 
 Check that the Istio control plane, CNI components, and ztunnel Pods are running.
 
+<img width="656" height="auto" alt="Screenshot 2026-11-08 205809" src="https://github.com/user-attachments/assets/9bf3c5e6-226d-4032-9683-d78baabaf549" />
+
 ## 4. Deploy the Bookinfo Application
 
 Bookinfo is a sample application consisting of several microservices:
@@ -101,7 +105,6 @@ Deploy the application:
 
 ```powershell
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/1.31.1/samples/bookinfo/platform/kube/bookinfo.yaml
-
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/1.31.1/samples/bookinfo/platform/kube/bookinfo-versions.yaml
 ```
 
@@ -110,6 +113,8 @@ Verify the Pods:
 ```powershell
 kubectl get pods
 ```
+
+<img width="551" height="auto" alt="Screenshot 2026-11-08 210221" src="https://github.com/user-attachments/assets/2931e0c3-7b91-4e3d-a344-caa390993081" />
 
 ### Configure the Gateway
 
@@ -129,6 +134,8 @@ Wait until the gateway is ready:
 kubectl wait --for=condition=programmed gateway/bookinfo-gateway --timeout=180s
 ```
 
+<img width="987" height="auto" alt="Screenshot 2026-11-08 211530" src="https://github.com/user-attachments/assets/e6ccdc26-d777-4e62-bfe8-2c377b1c6b3b" />
+
 ### Access Bookinfo
 
 ```powershell
@@ -138,6 +145,8 @@ kubectl port-forward svc/bookinfo-gateway-istio 8080:80
 Open:
 
 http://localhost:8080/productpage
+
+<img width="1626" height="auto" alt="Screenshot 2026-11-08 211801" src="https://github.com/user-attachments/assets/95d7e949-61ef-4036-a938-8e3d0c0a6747" />
 
 Refresh the page several times to observe different versions of the reviews service.
 
@@ -157,6 +166,8 @@ istioctl ztunnel-config workloads
 ```
 
 Bookinfo workloads should appear in the ztunnel configuration using the `HBONE` protocol.
+
+<img width="803" height="auto" alt="Screenshot 2026-11-08 212713" src="https://github.com/user-attachments/assets/189795a2-b547-4608-9ad5-6c5a730b49fd" />
 
 Ambient Mode handles traffic through node level ztunnel proxies without injecting sidecar containers into the application Pods.
 
@@ -189,6 +200,8 @@ The expected Prometheus server Service is:
 ```text
 prom-prometheus-server
 ```
+
+<img width="721" height="auto" alt="Screenshot 2026-11-08 213742" src="https://github.com/user-attachments/assets/a5110955-f195-4730-ac4c-00daf5a57822" />
 
 Its internal address is:
 
@@ -245,6 +258,8 @@ Open the dashboard:
 istioctl dashboard kiali
 ```
 
+<img width="1862" height="auto" alt="Screenshot 2026-11-08 214449" src="https://github.com/user-attachments/assets/ed7a4f3c-e2d3-4729-ba44-58c7536b1738" />
+
 ## 8. Generate and Visualize Traffic
 
 Keep the Bookinfo gateway port forwarding active in a separate PowerShell window:
@@ -269,6 +284,8 @@ Open Kiali and:
 4. Inspect the connections between Bookinfo services.
 5. Observe the traffic metrics.
 
+<img width="1582" height="auto" alt="Screenshot 2026-11-08 214821" src="https://github.com/user-attachments/assets/f3d430b3-21c2-433d-abc1-614a2f311319" />
+
 Allow time for Prometheus to collect the metrics.
 
 ### Verify Metrics in Prometheus
@@ -288,6 +305,8 @@ In Prometheus, query:
 ```promql
 istio_tcp_connections_opened_total
 ```
+
+<img width="1887" height="auto" alt="Screenshot 2026-11-08 215012" src="https://github.com/user-attachments/assets/e7edcd6a-2fcb-48a8-8e23-e357cdd3344b" />
 
 This metric can help verify TCP traffic observed by Istio.
 
@@ -350,9 +369,7 @@ Stop any active port forwarding commands before cleanup.
 
 ```powershell
 kubectl delete -f https://raw.githubusercontent.com/istio/istio/1.31.1/samples/bookinfo/gateway-api/bookinfo-gateway.yaml
-
 kubectl delete -f https://raw.githubusercontent.com/istio/istio/1.31.1/samples/bookinfo/platform/kube/bookinfo-versions.yaml
-
 kubectl delete -f https://raw.githubusercontent.com/istio/istio/1.31.1/samples/bookinfo/platform/kube/bookinfo.yaml
 ```
 
@@ -366,9 +383,7 @@ kubectl delete -f $kialiManifest
 
 ```powershell
 kubectl label namespace default istio.io/dataplane-mode-
-
 istioctl uninstall --purge -y
-
 kubectl delete namespace istio-system
 ```
 
