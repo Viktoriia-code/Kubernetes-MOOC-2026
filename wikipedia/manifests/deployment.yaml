@@ -1,0 +1,75 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wikipedia
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wikipedia
+  template:
+    metadata:
+      labels:
+        app: wikipedia
+    spec:
+      securityContext:
+        fsGroup: 100
+      initContainers:
+        - name: wikipedia-init
+          image: curlimages/curl:8.11.1
+          command:
+            - /bin/sh
+            - -c
+            - |
+              curl --fail --location --silent --show-error \
+                https://en.wikipedia.org/wiki/Kubernetes \
+                --output /usr/share/nginx/html/index.html
+
+              chmod 644 /usr/share/nginx/html/index.html
+          volumeMounts:
+            - name: wikipedia-content
+              mountPath: /usr/share/nginx/html
+      containers:
+        - name: nginx
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            periodSeconds: 5
+          volumeMounts:
+            - name: wikipedia-content
+              mountPath: /usr/share/nginx/html
+        - name: wikipedia-sidecar
+          image: curlimages/curl:8.11.1
+          command:
+            - /bin/sh
+            - -c
+            - |
+              while true; do
+                delay=$(( $(od -An -N2 -tu2 /dev/urandom) % 601 + 300 ))
+                echo "Waiting $delay seconds before fetching a random Wikipedia page"
+                sleep "$delay"
+
+                temporary_file=$(mktemp /usr/share/nginx/html/index.html.XXXXXX)
+
+                if curl --fail --location --silent --show-error \
+                  https://en.wikipedia.org/wiki/Special:Random \
+                  --output "$temporary_file"; then
+                  chmod 644 "$temporary_file"
+                  mv "$temporary_file" /usr/share/nginx/html/index.html
+                  echo "Wikipedia page updated successfully"
+                else
+                  rm -f "$temporary_file"
+                  echo "Failed to fetch Wikipedia page"
+                fi
+              done
+          volumeMounts:
+            - name: wikipedia-content
+              mountPath: /usr/share/nginx/html
+      volumes:
+        - name: wikipedia-content
+          emptyDir: {}

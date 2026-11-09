@@ -224,4 +224,11 @@
       <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/5.3/greeter">Greeter</a>
     </td>
   </tr>
+  <tr>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/5.4">5.4.</a></td>
+    <td>Wikipedia with init and sidecar</td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/5.4/wikipedia">Wikipedia</a>
+    </td>
+  </tr>
 </table>
