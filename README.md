@@ -231,4 +231,9 @@
       <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/5.4/wikipedia">Wikipedia</a>
     </td>
   </tr>
+  <tr>
+    <td>5.5.</td>
+    <td>Platform comparison</td>
+    <td>Online task</td>
+  </tr>
 </table>
