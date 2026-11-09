@@ -1,0 +1,14 @@
+{
+  "spec": {
+    "traffic": [
+      {
+        "revisionName": "hello-00001",
+        "percent": 50
+      },
+      {
+        "revisionName": "hello-00002",
+        "percent": 50
+      }
+    ]
+  }
+}
