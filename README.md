@@ -216,4 +216,11 @@
       <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/5.2/service_mesh">Service mesh</a>
     </td>
   </tr>
+  <tr>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/5.3">5.3.</a></td>
+    <td>Log app, the Service Mesh Edition</td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/5.3/log_output">Log output</a>
+    </td>
+  </tr>
 </table>

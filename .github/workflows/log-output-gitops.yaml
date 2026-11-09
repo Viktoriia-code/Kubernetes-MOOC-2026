@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'log_output/**'
+      - 'greeter/**'
       - '.github/workflows/log-output-gitops.yaml'
 
 permissions:
@@ -30,6 +31,8 @@ jobs:
         run: |
           docker build -t vikikone/log-output:$GITHUB_SHA ./log_output
           docker push vikikone/log-output:$GITHUB_SHA
+          docker build -t vikikone/greeter:$GITHUB_SHA ./greeter
+          docker push vikikone/greeter:$GITHUB_SHA
 
       - name: Set up Kustomize
         uses: imranismail/setup-kustomize@v3
@@ -38,6 +41,7 @@ jobs:
         working-directory: ./log_output
         run: |
           kustomize edit set image vikikone/log-output=vikikone/log-output:$GITHUB_SHA
+          kustomize edit set image vikikone/greeter=vikikone/greeter:$GITHUB_SHA
 
       - name: Commit updated image version
         uses: EndBug/add-and-commit@v9

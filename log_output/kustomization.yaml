@@ -3,8 +3,13 @@ kind: Kustomization
 resources:
 - manifests/configmap.yaml
 - manifests/deployment.yaml
+- manifests/greeter-route.yaml
+- manifests/greeter.yaml
 - manifests/service.yaml
 images:
 - name: vikikone/log-output
   newName: vikikone/log-output
   newTag: 863fa25627144c427df931799fa633494cb2e85e
+- name: vikikone/greeter
+  newName: vikikone/greeter
+  newTag: v1

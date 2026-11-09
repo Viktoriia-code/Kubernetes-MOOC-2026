@@ -1,8 +1,50 @@
-# 4.7 - Baby steps to GitOps
+## Exercise 5.3 implementation
 
 ## Task
+> Deploy the Log Output application to Istio Ambient Mesh and extend it with a Greeter service that responds to HTTP GET requests. The Log Output application should retrieve and display the greeting alongside its existing output.
+>
+> Deploy two versions of Greeter and configure traffic routing using an HTTPRoute:
+> * Greeter v1: 75% of requests
+> * Greeter v2: 25% of requests
+>
+> Use three Kubernetes Services (greeter-svc, greeter-svc-1, and greeter-svc-2) and an Istio waypoint to manage weighted routing.
+>
+> Finally, use Kiali to visualize the service communication and verify that traffic is distributed according to the configured weights.
 
-> Move the Log output application to use GitOps so that when you commit to the repository, the application is automatically updated.
+## Task implementation
+
+The Log Output reader calls `http://greeter-svc:80/` and displays the returned
+greeting. The Kustomization deploys two Greeter versions, three Services, and
+an Istio `HTTPRoute` that splits traffic 75% to `greeter-svc-1` and 25% to
+`greeter-svc-2`.
+
+The main implementation and step-by-step explanation are documented in the
+[`Greeter README`](../greeter/README.md). The relevant files in this
+application are:
+
+- `../greeter/` - Greeter application image.
+- `manifests/greeter.yaml` - Greeter Deployments and Services.
+- `manifests/greeter-route.yaml` - Weighted HTTPRoute.
+- `server.js` and `manifests/deployment.yaml` - Greeting request and display.
+
+Deploy it after enabling Istio Ambient Mode in the `default` namespace:
+
+```powershell
+kubectl apply -k .
+kubectl rollout status deployment/greeter-dep-v1
+kubectl rollout status deployment/greeter-dep-v2
+kubectl rollout status deployment/log-output-dep
+```
+
+Port-forward the Log Output Service and generate requests to observe both
+greeting versions:
+
+```powershell
+kubectl port-forward service/log-output-svc 3000:2345
+1..100 | ForEach-Object {
+  curl.exe -s http://localhost:3000/ | Select-String Greeting
+}
+```
 
 ## Technologies
 
@@ -12,9 +54,9 @@
 * Docker Hub
 * Kustomize
 
-## Implementation
-
-### 1. Install Argo CD
+## Previous important steps
+<details>
+<summary>Argo CD</summary>
 
 Created a dedicated namespace and installed Argo CD in the local Kubernetes cluster.
 
@@ -122,8 +164,7 @@ To verify the completed implementation:
 Argo CD is installed and connected to the GitHub repository. The GitHub Actions workflow for building, publishing, and releasing Log Output is configured. Initial synchronization was attempted, and deployment issues were identified.
 
 The complete automated deployment workflow still requires end-to-end verification.
-
-## Important steps
+</details>
 
 <details>
 <summary>Local Kubernetes deployment</summary>
@@ -173,7 +214,36 @@ curl.exe http://localhost:3000/status
 ```
 
 The response contains the ConfigMap value, generated status information, and
-the Ping-pong count when the Ping-pong Service is available.
+the Ping-pong count and greeting when the corresponding Services are available.
+</details>
+
+<details>
+<summary>Deploy with Istio Ambient Mode</summary>
+
+The Kustomization also deploys the `greeter` service used by the service-mesh
+exercise. `greeter-svc` is the stable service called by the log-output reader.
+Its `HTTPRoute` sends 75% of requests to `greeter-svc-1` and 25% to
+`greeter-svc-2`.
+
+After the `default` namespace has been enrolled in Istio Ambient Mode, apply
+the application:
+
+```powershell
+kubectl apply -k .
+kubectl rollout status deployment/greeter-dep-v1
+kubectl rollout status deployment/greeter-dep-v2
+kubectl rollout status deployment/log-output-dep
+```
+
+Generate traffic through the log-output Service and inspect the greeting:
+
+```powershell
+kubectl port-forward service/log-output-svc 3000:2345
+1..100 | ForEach-Object { curl.exe -s http://localhost:3000/ | Select-String Greeting }
+```
+
+The `greeter` image is built and published by the Log Output GitHub Actions
+workflow together with the log-output image.
 </details>
 
 <details>

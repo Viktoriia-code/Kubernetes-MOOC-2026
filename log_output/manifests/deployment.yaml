@@ -30,6 +30,8 @@ spec:
                   key: MESSAGE
             - name: PINGPONG_URL
               value: http://ping-pong-svc:80/pings
+            - name: GREETER_URL
+              value: http://greeter-svc:80/
           ports:
             - containerPort: 3000
           readinessProbe:
