@@ -9,7 +9,7 @@ resources:
 images:
 - name: vikikone/greeter
   newName: vikikone/greeter
-  newTag: 2bb1963bee00d0d44cdaec331aac9c6b64daf9e0
+  newTag: b9737cace51a09064da409417186f2bd06dc0c1b
 - name: vikikone/log-output
   newName: vikikone/log-output
-  newTag: 2bb1963bee00d0d44cdaec331aac9c6b64daf9e0
+  newTag: b9737cace51a09064da409417186f2bd06dc0c1b
