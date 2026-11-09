@@ -52,6 +52,8 @@ Monitor the sidecar:
 kubectl logs deployment/wikipedia -c wikipedia-sidecar -f
 ```
 
+<img width="783" height="auto" alt="Screenshot 2026-11-09 180355" src="https://github.com/user-attachments/assets/5bda0b87-534e-453d-a0f9-c070e71fd945" />
+
 The sidecar logs its waiting time and reports successful page updates.
 
 The downloaded HTML files use permissions `644`, allowing Nginx to read them.
@@ -59,3 +61,7 @@ The downloaded HTML files use permissions `644`, allowing Nginx to read them.
 ## Result
 
 The application initially serves the Kubernetes Wikipedia page. The sidecar periodically replaces it with a random Wikipedia article, demonstrating how init containers, sidecar containers, and shared volumes work together within a Kubernetes Pod.
+
+<img width="1898" height="auto" alt="Screenshot 2026-11-09 180128" src="https://github.com/user-attachments/assets/a1b3b539-8be5-4b85-93d7-05647d960369" />
+After 640 seconds:
+<img width="1897" height="auto" alt="Screenshot 2026-11-09 181701" src="https://github.com/user-attachments/assets/2e810076-2dd0-499c-b1e9-ce48328b0da8" />
