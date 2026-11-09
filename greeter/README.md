@@ -283,16 +283,25 @@ These conditions indicate that the route is accepted and the waypoint can proces
 
 ## 8. Access the Log Output application
 
-The current local Kustomization does not include an Istio Gateway for the
-Log Output application. Forward the Service directly:
+Forward the Istio Gateway to localhost:
 
 ```powershell
-kubectl port-forward service/log-output-svc 3000:2345
+kubectl port-forward svc/log-gateway-istio 8080:80
 ```
 
-The Log Output application should be accessible at:
+The Log Output application is accessible at:
 
-http://localhost:3000/status
+http://localhost:8080/status
+
+<img width="471" height="auto" alt="Screenshot 2026-11-09 151641" src="https://github.com/user-attachments/assets/ef2ae86a-0be3-46e6-a9be-f4271022728a" />
+
+Verify the response:
+
+```powershell
+Invoke-WebRequest http://localhost:8080/status -UseBasicParsing
+```
+
+Traffic passes through the Istio Gateway before reaching the Log Output Service.
 
 ## 9. Test the traffic distribution
 
@@ -406,6 +415,8 @@ Open:
 
 http://localhost:20001/kiali
 
+<img width="1880" height="auto" alt="Screenshot 2026-11-09 154234" src="https://github.com/user-attachments/assets/0bc78ebb-5705-41a6-842a-e167a244580c" />
+
 ## 12. Verify traffic using Kiali
 
 Open the Kiali dashboard and navigate to **Traffic Graph**.
@@ -434,6 +445,8 @@ greeter-v1  greeter-v2
 ```
 
 The graph should also show communication with Ping Pong and PostgreSQL when those applications are active.
+
+<img width="1587" height="auto" alt="Screenshot 2026-11-09 165004" src="https://github.com/user-attachments/assets/b493f53f-0806-4100-8a96-d618df7721b2" />
 
 Kiali uses Prometheus metrics to display request rates and traffic distribution.
 
