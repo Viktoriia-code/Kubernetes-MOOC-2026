@@ -236,4 +236,11 @@
     <td>Platform comparison</td>
     <td>Online task</td>
   </tr>
+  <tr>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/5.6">5.6.</a></td>
+    <td>Trying serverless</td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/5.6/task-5-6.md">Knative Serving</a>
+    </td>
+  </tr>
 </table>

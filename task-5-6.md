@@ -38,7 +38,7 @@ Verified that the Knative Deployments were running:
 kubectl get deployments -n knative-serving
 ```
 
-**Screenshot:** Knative Deployments showing `READY 1/1`.
+<img width="816" height="auto" alt="image" src="https://github.com/user-attachments/assets/b63503a0-308c-4e6d-94fe-79f80a1db39e" />
 
 ## 2. Deploying a Knative Service
 
@@ -69,6 +69,8 @@ Verified the service:
 kubectl get ksvc hello
 kubectl get revisions
 ```
+<img width="842" height="auto" alt="image" src="https://github.com/user-attachments/assets/50b9f571-bb7c-49ba-a057-147d5e152b8c" />
+<img width="831" height="auto" alt="image" src="https://github.com/user-attachments/assets/f034bf18-8c66-4275-ba5f-faf4cf6b87ed" />
 
 The service was created successfully with the first revision `hello-00001` and `READY=True`.
 
@@ -102,7 +104,7 @@ Application URL:
 
 `http://hello.default.localhost:8083`
 
-**Screenshot:** Hello World application in the browser.
+<img width="393" height="auto" alt="Screenshot 2026-11-09 232648" src="https://github.com/user-attachments/assets/bb801c1f-2d03-48c0-834b-4787ca4742ed" />
 
 ## 3. Autoscaling
 
@@ -137,7 +139,7 @@ hello-00001-deployment-7494bd57d5-74q28   2/2     Running   0
 
 Knative supports scaling application Pods to zero during inactivity and starting them again when requests arrive.
 
-**Screenshot:** Pod and Deployment status during the autoscaling test.
+<img width="680" height="180" alt="Screenshot 2026-11-09 233126" src="https://github.com/user-attachments/assets/838ec1ba-2c8a-463d-852f-884edb6f96fa" />
 
 ## 4. Traffic Splitting
 
@@ -211,4 +213,6 @@ Sent multiple requests to test traffic distribution:
 
 The two revisions were configured to receive equal shares of incoming traffic.
 
-**Screenshot:** Traffic splitting configuration and responses from both revisions.
+<img width="666" height="372" alt="Screenshot 2026-11-09 233609" src="https://github.com/user-attachments/assets/bc22a14f-b71e-4884-bc3e-d899fff13954" />
+<img width="372" height="78" alt="Screenshot 2026-11-09 233522" src="https://github.com/user-attachments/assets/2cc43690-0b16-4f58-82f2-20004ed16ef4" />
+<img width="393" height="85" alt="Screenshot 2026-11-09 232648" src="https://github.com/user-attachments/assets/c350854d-d80a-4b32-b083-a284966aa6c5" />
