@@ -243,4 +243,11 @@
       <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/5.6/task-5-6.md">Knative Serving</a>
     </td>
   </tr>
+  <tr>
+    <td><a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/5.7">5.7.</a></td>
+    <td>Deploy to serverless</td>
+    <td>
+      <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/5.7/log_output">Log output</a>
+    </td>
+  </tr>
 </table>
