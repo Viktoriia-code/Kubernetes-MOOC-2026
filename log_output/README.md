@@ -1,10 +1,9 @@
-# Exercise 5.7 - Deploy Ping-pong to Knative
+# Exercise 5.7 - Deploy to serverless
 
 ## Task
 > Make the Ping-pong service of the Log Output application serverless by deploying it as a Knative Service. Log Output must call the Knative Service using its fully qualified Kubernetes DNS name, and the Gateway route must rewrite the browser request to the Knative hostname.
 
 ## Overview
-
 The goal of this exercise was to deploy the Ping Pong application as a serverless service using Knative Serving.
 
 Log Output remains a regular Kubernetes Deployment, while Ping Pong runs as a Knative Service.
@@ -46,7 +45,7 @@ Kourier is used as the networking layer for Knative.
 
 The following screenshot shows the Ping Pong Knative Service running successfully with `READY=True`.
 
-![Ping Pong Knative Service](./images/knative-service.png)
+<img width="790" height="auto" alt="image" src="https://github.com/user-attachments/assets/30083a36-62ae-4fdf-8d36-419ae346d323" />
 
 ## 2. Configure Internal Communication
 
@@ -203,7 +202,7 @@ Its external IP remained pending, so port forwarding was used for local access.
 
 The following screenshot shows the Istio Gateway Deployment running successfully.
 
-![Istio Gateway Deployment](./images/istio-gateway.png)
+<img width="800" height="auto" alt="image" src="https://github.com/user-attachments/assets/68e350b7-dd46-4f0f-be80-97c4ca2d2dd3" />
 
 ## 6. Configure HTTPRoute
 
@@ -278,7 +277,7 @@ http://localhost:8080/status
 
 The following screenshot shows the Log Output response, including the Ping Pong counter.
 
-![Log Output Status](./images/log-output-status.png)
+<img width="455" height="auto" alt="image" src="https://github.com/user-attachments/assets/0d7c698a-eded-4f5e-babb-8c8bb703e1e7" />
 
 ### Ping Pong
 
@@ -288,7 +287,7 @@ http://localhost:8080/pingpong
 
 The following screenshot shows the Ping Pong response through the Istio Gateway.
 
-![Ping Pong Response](./images/pingpong-response.png)
+<img width="353" height="81" alt="Screenshot 2026-11-10 121658" src="https://github.com/user-attachments/assets/c503c9ca-87c5-483c-80c0-a2698b30e55c" />
 
 Alternatively, test both endpoints using PowerShell:
 
