@@ -250,4 +250,9 @@
       <a href="https://github.com/Viktoriia-code/Kubernetes-MOOC-2026/tree/5.7/log_output">Log output</a>
     </td>
   </tr>
+  <tr>
+    <td>5.8.</td>
+    <td>Landscape</td>
+    <td>Online task</td>
+  </tr>
 </table>
