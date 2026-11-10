@@ -13,11 +13,12 @@ spec:
       filters:
         - type: URLRewrite
           urlRewrite:
+            hostname: pingpong.exercises.localhost
             path:
               type: ReplacePrefixMatch
               replacePrefixMatch: /
       backendRefs:
-        - name: ping-pong-svc
+        - name: pingpong
           port: 80
 
     - matches:

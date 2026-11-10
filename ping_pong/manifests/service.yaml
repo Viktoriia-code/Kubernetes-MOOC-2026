@@ -1,14 +1,31 @@
-apiVersion: v1
+apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
-  name: ping-pong-svc
-  labels:
-    app: ping-pong
+  name: pingpong
 spec:
-  type: ClusterIP
-  selector:
-    app: ping-pong
-  ports:
-    - port: 80
-      protocol: TCP
-      targetPort: 3000
+  template:
+    metadata:
+      labels:
+        app: ping-pong
+    spec:
+      containers:
+        - name: ping-pong
+          image: vikikone/ping-pong:4.4
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: ping-pong-database-config
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pingpong-secret
+                  key: postgres-password
+          ports:
+            - containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /pings
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5

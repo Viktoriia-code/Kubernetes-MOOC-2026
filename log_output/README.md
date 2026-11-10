@@ -1,545 +1,335 @@
-# Exercise 5.3 - Log App, the Service Mesh Edition
+# Exercise 5.7 - Deploy Ping-pong to Knative
 
 ## Task
-> Deploy the Log Output application to Istio Ambient Mesh and extend it with a Greeter service that responds to HTTP GET requests. The Log Output application should retrieve and display the greeting alongside its existing output.
-> 
-> Deploy two versions of Greeter and configure traffic routing using an HTTPRoute:
-> * Greeter v1: 75% of requests
-> * Greeter v2: 25% of requests
-> 
-> Use three Kubernetes Services (greeter-svc, greeter-svc-1, and greeter-svc-2) and an Istio waypoint to manage weighted routing.
-> 
-> Finally, use Kiali to visualize the service communication and verify that traffic is distributed according to the configured weights.
+> Make the Ping-pong service of the Log Output application serverless by deploying it as a Knative Service. Log Output must call the Knative Service using its fully qualified Kubernetes DNS name, and the Gateway route must rewrite the browser request to the Knative hostname.
 
 ## Overview
 
-In this exercise, I configured Istio Ambient Mesh to manage traffic between Kubernetes applications running in a local k3d cluster on Windows.
+The goal of this exercise was to deploy the Ping Pong application as a serverless service using Knative Serving.
 
-The application consists of three components:
+Log Output remains a regular Kubernetes Deployment, while Ping Pong runs as a Knative Service.
 
-- **Log Output:** Generates timestamps and UUIDs and retrieves information from other services.
-- **Ping Pong:** Counts requests and returns the current count.
-- **Greeter:** Provides two versions that return different greetings.
+I also configured Istio Gateway API to expose both applications through a single entry point.
 
-The objective was to configure weighted traffic routing between two Greeter versions using Istio and verify the distribution using Kiali.
+## Technologies
 
-The expected traffic distribution is:
+* Kubernetes with k3d
+* Knative Serving 1.24.0
+* Kourier
+* Istio 1.30.8
+* Gateway API 1.4.0
+* Helm
+* PostgreSQL
 
-- Greeter v1: 75%
-- Greeter v2: 25%
+## 1. Deploy Ping Pong as a Knative Service
 
-## 1. Create the Kubernetes cluster
+Ping Pong was deployed in the `exercises` namespace using Knative Serving instead of a regular Kubernetes Deployment.
 
-Create a k3d cluster with two worker nodes and Traefik disabled.
+Knative manages the application's Deployment, Service, ReplicaSet, revisions and scaling.
+
+Verify the Knative Service:
 
 ```powershell
-k3d cluster create istio --api-port 6550 -p "9080:80@loadbalancer" -p "9443:443@loadbalancer" --agents 2 --k3s-arg "--disable=traefik@server:*"
+kubectl get ksvc pingpong -n exercises
 ```
 
-Switch to the cluster context:
+Output:
 
-```powershell
-kubectl config use-context k3d-istio
+```text
+NAME       URL                                   LATESTCREATED    LATESTREADY      READY
+pingpong   http://pingpong.exercises.localhost   pingpong-00001   pingpong-00001   True
 ```
 
-Verify the nodes:
+Kourier is used as the networking layer for Knative.
 
-```powershell
-kubectl get nodes
+### Knative Service Status
+
+The following screenshot shows the Ping Pong Knative Service running successfully with `READY=True`.
+
+![Ping Pong Knative Service](./images/knative-service.png)
+
+## 2. Configure Internal Communication
+
+Log Output communicates with Ping Pong through its fully qualified Kubernetes Service address:
+
+```text
+http://pingpong.exercises.svc.cluster.local/pings
 ```
 
-## 2. Install Istio Ambient Mesh
+The environment variable in the Log Output Deployment is configured as follows:
 
-Download Istio from the official releases:
-
-https://github.com/istio/istio/releases
-
-Extract the Windows archive and add the directory containing `istioctl.exe` to the PowerShell PATH.
-
-For example:
-
-```powershell
-$env:Path += ";C:\istio-1.31.1\bin"
+```yaml
+env:
+  - name: PINGPONG_URL
+    value: "http://pingpong.exercises.svc.cluster.local/pings"
 ```
 
-Verify the installation:
+Knative creates a Kubernetes Service named `pingpong` with type `ExternalName`, pointing to:
 
-```powershell
-istioctl version
+```text
+kourier-internal.kourier-system.svc.cluster.local
 ```
 
-Install Istio Ambient Mesh:
+This allows Log Output to communicate with Ping Pong through Knative networking.
+
+I verified the connection using a temporary curl Pod:
 
 ```powershell
-istioctl install --set profile=ambient --set values.global.platform=k3d --set values.cni.cniBinDir=/var/lib/rancher/k3s/data/cni --set values.cni.cniConfDir=/var/lib/rancher/k3s/agent/etc/cni/net.d -y
+kubectl run curl-test -n exercises --rm -it --restart=Never --image=curlimages/curl -- http://pingpong.exercises.svc.cluster.local/pings
 ```
 
-Verify the Istio components:
+The request returned the Ping Pong counter successfully.
 
-```powershell
-kubectl get pods -n istio-system
-```
+Log Output also displayed the counter:
 
-The installation includes:
-
-- Istiod
-- Istio CNI
-- ztunnel
-
-Enable ambient mode for the `default` namespace:
-
-```powershell
-kubectl label namespace default istio.io/dataplane-mode=ambient --overwrite
-```
-
-Verify:
-
-```powershell
-kubectl get namespace default --show-labels
+```text
+Ping / Pongs: 2
 ```
 
 ## 3. Install Gateway API
 
-Install the Kubernetes Gateway API CRDs:
+Install the Gateway API custom resource definitions:
 
 ```powershell
-kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.6.0/experimental-install.yaml
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/standard-install.yaml
 ```
 
 Verify:
 
 ```powershell
-kubectl get gatewayclasses
+kubectl get crd gateways.gateway.networking.k8s.io
+kubectl get crd httproutes.gateway.networking.k8s.io
 ```
 
-## 4. Deploy the applications
+Both custom resource definitions were installed successfully.
 
-The Log Output and Ping Pong applications were reused from previous exercises.
+## 4. Install Istio
 
-The Log Output application contains two containers:
+Istio is used as the Gateway API controller, while Kourier continues handling Knative networking.
 
-- `log-output-writer`: Generates timestamps and UUIDs.
-- `log-output-reader`: Serves HTTP requests and retrieves data from other applications.
+Add the Istio Helm repository:
 
-The reader uses the following environment variables:
-
-```yaml
-env:
-  - name: MESSAGE
-    valueFrom:
-      configMapKeyRef:
-        name: log-output-config
-        key: MESSAGE
-  - name: PINGPONG_URL
-    value: http://ping-pong-svc:80/pings
-  - name: GREETER_URL
-    value: http://greeter-svc:80/
+```powershell
+helm repo add istio https://istio-release.storage.googleapis.com/charts
+helm repo update
 ```
 
-Deploy the applications using their Kubernetes manifests.
+Install Istio base:
+
+```powershell
+helm upgrade --install istio-base istio/base `
+  --namespace istio-system `
+  --create-namespace `
+  --version 1.30.8 `
+  --wait
+```
+
+Install the Istio control plane:
+
+```powershell
+helm upgrade --install istiod istio/istiod `
+  --namespace istio-system `
+  --version 1.30.8 `
+  --wait
+```
 
 Verify:
 
 ```powershell
-kubectl get pods
-kubectl get services
+kubectl get pods -n istio-system
+kubectl get gatewayclass
 ```
 
-## 5. Deploy Greeter v1 and v2
-
-Two versions of the Greeter application were deployed.
-
-Greeter v1 returns:
+Results:
 
 ```text
-hello from greeter v1
+NAME                      READY   STATUS
+istiod-6bc87bb9bd-qgs5j   1/1     Running
 ```
-
-Greeter v2 returns:
 
 ```text
-hello from greeter v2
+NAME    CONTROLLER                    ACCEPTED
+istio   istio.io/gateway-controller   True
 ```
 
-Both versions use the same application image but have different `GREETING` environment variables.
+## 5. Configure Gateway
 
-Greeter v1:
+Create `log_output/manifests/gateway.yaml`:
 
 ```yaml
-env:
-  - name: GREETING
-    value: "hello from greeter v1"
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: log-gateway
+spec:
+  gatewayClassName: istio
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        kinds:
+          - kind: HTTPRoute
 ```
 
-Greeter v2:
-
-```yaml
-env:
-  - name: GREETING
-    value: "hello from greeter v2"
-```
-
-Three Kubernetes Services are required:
-
-| Service | Purpose |
-|---------|---------|
-| `greeter-svc` | Main Service used by Log Output |
-| `greeter-svc-1` | Backend for Greeter v1 |
-| `greeter-svc-2` | Backend for Greeter v2 |
-
-The main Service selects both versions, while the backend Services select individual versions.
-
-Apply the Log Output and Greeter manifests with Kustomize:
+Apply the Gateway:
 
 ```powershell
-kubectl apply -k .\log_output
+kubectl apply -f .\log_output\manifests\gateway.yaml -n exercises
 ```
+
+Istio automatically creates the `log-gateway-istio` Deployment and Service.
 
 Verify:
 
 ```powershell
-kubectl get deployments
-kubectl get services
-kubectl get endpoints greeter-svc greeter-svc-1 greeter-svc-2
+kubectl get gateway -n exercises
+kubectl get deployment log-gateway-istio -n exercises
+kubectl get svc log-gateway-istio -n exercises
 ```
 
-## 6. Configure the Istio waypoint
+The Gateway Deployment was running:
 
-Istio Ambient Mesh uses ztunnel for secure Layer 4 communication.
-
-However, weighted HTTP traffic routing requires Layer 7 processing.
-
-For this purpose, I configured an Istio waypoint.
-
-Create the waypoint:
-
-```powershell
-istioctl waypoint apply -n default --name greeter-waypoint
+```text
+NAME                READY   AVAILABLE
+log-gateway-istio   1/1     1
 ```
 
-Verify:
+The Gateway Service was created as a `LoadBalancer`.
 
-```powershell
-kubectl get gateway greeter-waypoint
-kubectl get pods
-```
+Its external IP remained pending, so port forwarding was used for local access.
 
-Configure the main Greeter Service to use the waypoint:
+### Istio Gateway Status
 
-```powershell
-kubectl label service greeter-svc istio.io/use-waypoint=greeter-waypoint --overwrite
-```
+The following screenshot shows the Istio Gateway Deployment running successfully.
 
-The waypoint processes HTTP requests to `greeter-svc` and applies the configured traffic routing rules.
+![Istio Gateway Deployment](./images/istio-gateway.png)
 
-## 7. Configure weighted traffic routing
+## 6. Configure HTTPRoute
 
-Create `greeter-route.yaml`:
+Create `log_output/manifests/route.yaml`:
 
 ```yaml
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: greeter-route
-  namespace: default
+  name: log-route
 spec:
   parentRefs:
-    - group: ""
-      kind: Service
-      name: greeter-svc
+    - name: log-gateway
   rules:
-    - backendRefs:
-        - name: greeter-svc-1
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /pingpong
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            hostname: pingpong.exercises.localhost
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - name: pingpong
           port: 80
-          weight: 75
-        - name: greeter-svc-2
-          port: 80
-          weight: 25
+
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: log-output-svc
+          port: 2345
 ```
 
-The `group: ""` field is required because the HTTPRoute is attached to a Kubernetes Service rather than a Gateway.
+The HTTPRoute defines two routing rules:
 
-Apply the configuration:
+1. Requests to `/pingpong` are forwarded to the Knative Service. The hostname is rewritten to `pingpong.exercises.localhost`, matching the hostname configured in Knative.
+2. All other requests, including `/status`, are forwarded to `log-output-svc` on port 2345.
+
+Apply the HTTPRoute:
 
 ```powershell
-kubectl apply -f .\log_output\manifests\greeter-route.yaml
+kubectl apply -f .\log_output\manifests\route.yaml -n exercises
 ```
 
 Verify:
 
 ```powershell
-kubectl get httproute greeter-route -o yaml
+kubectl get httproute -n exercises
+kubectl describe httproute log-route -n exercises
 ```
 
-The expected conditions are:
+## 7. Test the Applications
 
-```text
-Accepted: True
-ResolvedRefs: True
-ResolvedWaypoints: True
-```
-
-These conditions indicate that the route is accepted and the waypoint can process the traffic.
-
-## 8. Access the Log Output application
-
-Forward the Istio Gateway to localhost:
+Forward the Istio Gateway port:
 
 ```powershell
-kubectl port-forward svc/log-gateway-istio 8080:80
+kubectl port-forward -n exercises svc/log-gateway-istio 8080:80
 ```
 
-The Log Output application is accessible at:
+Both applications are accessible through the same Gateway.
+
+### Log Output
+
+The Log Output application is available at:
 
 http://localhost:8080/status
 
-<img width="471" height="auto" alt="Screenshot 2026-11-09 151641" src="https://github.com/user-attachments/assets/ef2ae86a-0be3-46e6-a9be-f4271022728a" />
+The following screenshot shows the Log Output response, including the Ping Pong counter.
 
-Verify the response:
+![Log Output Status](./images/log-output-status.png)
 
-```powershell
-Invoke-WebRequest http://localhost:8080/status -UseBasicParsing
-```
+### Ping Pong
 
-Traffic passes through the Istio Gateway before reaching the Log Output Service.
+The Ping Pong application is available at:
 
-## 9. Test the traffic distribution
+http://localhost:8080/pingpong
 
-To verify weighted routing, send multiple requests from inside the Kubernetes cluster.
+The following screenshot shows the Ping Pong response through the Istio Gateway.
 
-Create a temporary test Pod:
+![Ping Pong Response](./images/pingpong-response.png)
 
-```powershell
-kubectl delete pod tmp-curl --ignore-not-found
-kubectl run tmp-curl --image=curlimages/curl:8.10.0 --restart=Never --command -- sleep 7200
-kubectl wait --for=condition=Ready pod/tmp-curl --timeout=120s
-```
-
-Send 100 requests to the main Greeter Service:
+Alternatively, test both endpoints using PowerShell:
 
 ```powershell
-kubectl exec tmp-curl -- sh -c 'for i in $(seq 1 100); do curl -s http://greeter-svc:80/; echo; done' | Group-Object | Select-Object Name, Count
+curl.exe -i http://localhost:8080/status
+curl.exe -i http://localhost:8080/pingpong
 ```
 
-The expected distribution is approximately:
+Both endpoints were tested successfully.
 
-```text
-Name    Count
-----    -----
-hello from greeter v1   75
-hello from greeter v2   25
-```
+## 8. Knative Scaling
 
-The actual results may vary because Istio distributes requests probabilistically.
+Knative Serving supports automatic scaling based on incoming requests, including scaling to zero when an application is idle.
 
-The supplied exercise example produced:
-
-```text
-76 hello from greeter v1
-24 hello from greeter v2
-```
-
-This is consistent with the configured 75% / 25% distribution.
-
-## 10. Test routing without the waypoint
-
-The waypoint is responsible for enforcing the HTTPRoute weights.
-
-Remove the waypoint label temporarily:
+Inspect the revision and replica counts:
 
 ```powershell
-kubectl label service greeter-svc istio.io/use-waypoint-
+kubectl get revisions -n exercises
+kubectl get pods -n exercises
 ```
 
-Repeat the traffic test:
+After a period without requests, Knative can scale Ping Pong down to zero replicas.
 
-```powershell
-kubectl exec tmp-curl -- sh -c 'for i in $(seq 1 100); do curl -s http://greeter-svc:80/; echo; done' | Group-Object | Select-Object Name, Count
-```
+A new request should trigger the creation of a Pod.
 
-Without the waypoint, the expected distribution is approximately 50% for each version because the main Kubernetes Service selects both versions.
+This scaling behavior has not yet been separately verified in this deployment.
 
-Restore the waypoint:
+## Result
 
-```powershell
-kubectl label service greeter-svc istio.io/use-waypoint=greeter-waypoint --overwrite
-```
+Ping Pong was successfully deployed as a Knative Service.
 
-Repeat the test to verify that the weighted routing is restored.
+Log Output continues running as a regular Kubernetes Deployment and communicates with Ping Pong through its fully qualified internal Service address.
 
-## 11. Install Prometheus and Kiali
+Kourier handles Knative networking, while Istio Gateway API provides external routing for both applications.
 
-Kiali provides a graphical view of service mesh traffic.
+Both endpoints were tested successfully:
 
-Prometheus collects the metrics required for traffic visualization.
+* `http://localhost:8080/status`
+* `http://localhost:8080/pingpong`
 
-Add the Prometheus Helm repository:
-
-```powershell
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo update
-```
-
-Install Prometheus:
-
-```powershell
-helm upgrade --install prom prometheus-community/prometheus -n monitoring --create-namespace --set alertmanager.enabled=false --set server.persistentVolume.enabled=false
-```
-
-Install Kiali using the Istio addon manifest:
-
-```powershell
-kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.31/samples/addons/kiali.yaml
-```
-
-If Prometheus runs in the `monitoring` namespace, configure Kiali to use:
-
-```text
-http://prom-prometheus-server.monitoring:80
-```
-
-Verify Kiali:
-
-```powershell
-kubectl get pods -n istio-system
-kubectl rollout status deployment/kiali -n istio-system
-```
-
-Forward the Kiali Service:
-
-```powershell
-kubectl port-forward svc/kiali 20001:20001 -n istio-system
-```
-
-Open:
-
-http://localhost:20001/kiali
-
-<img width="1880" height="auto" alt="Screenshot 2026-11-09 154234" src="https://github.com/user-attachments/assets/0bc78ebb-5705-41a6-842a-e167a244580c" />
-
-## 12. Verify traffic using Kiali
-
-Open the Kiali dashboard and navigate to **Traffic Graph**.
-
-Select the `default` namespace.
-
-Generate requests through the Log Output Gateway:
-
-```powershell
-1..300 | ForEach-Object {
-    Invoke-WebRequest http://localhost:3000/status -UseBasicParsing | Out-Null
-}
-```
-
-The expected traffic flow is:
-
-```text
-   log-output
-        |
-        v
-    greeter-svc
-      /     \
-     v       v
-greeter-v1  greeter-v2
-    75%       25%
-```
-
-The graph should also show communication with Ping Pong and PostgreSQL when those applications are active.
-
-<img width="1587" height="auto" alt="Screenshot 2026-11-09 165004" src="https://github.com/user-attachments/assets/b493f53f-0806-4100-8a96-d618df7721b2" />
-
-Kiali uses Prometheus metrics to display request rates and traffic distribution.
-
-Metrics must be collected while requests are being generated. Requests made before Prometheus starts collecting metrics will not appear in the graph.
-
-## 13. Troubleshooting
-
-### HTTPRoute is not accepted
-
-Check:
-
-```powershell
-kubectl describe httproute greeter-route
-```
-
-The parent reference must explicitly identify the Kubernetes Service:
-
-```yaml
-parentRefs:
-  - group: ""
-    kind: Service
-    name: greeter-svc
-```
-
-### Gateway returns HTTP 404
-
-Check the Gateway HTTPRoute:
-
-```powershell
-kubectl describe httproute greeter-route
-```
-
-Verify the Log Output Service port:
-
-```powershell
-kubectl get svc log-output-svc
-```
-
-Test a single request before generating large amounts of traffic:
-
-```powershell
-Invoke-WebRequest http://localhost:3000/status -UseBasicParsing
-```
-
-### Kiali graph is empty
-
-Verify that Prometheus and Kiali are running:
-
-```powershell
-kubectl get pods -n monitoring
-kubectl get pods -n istio-system
-```
-
-Generate fresh traffic and refresh the graph.
-
-### Old applications remain visible in Kiali
-
-Kiali may show historical traffic from previously deleted applications.
-
-Select a shorter time window and disable idle nodes.
-
-Verify the remaining resources:
-
-```powershell
-kubectl get pods,deployments,services -A
-```
-
-## 14. Results
-
-The exercise demonstrates how Istio Ambient Mesh can manage HTTP traffic between Kubernetes applications.
-
-The main outcomes are:
-
-1. Configured Istio Ambient Mesh in a local k3d cluster.
-2. Deployed two versions of the Greeter application.
-3. Configured an Istio waypoint for Layer 7 traffic management.
-4. Created an HTTPRoute with 75% / 25% weighted routing.
-5. Used Prometheus and Kiali to inspect service communication and traffic distribution.
-
-The supplied exercise example showed that the traffic distribution was approximately 75% for Greeter v1 and 25% for Greeter v2 when the waypoint was enabled.
-
-Without the waypoint, the distribution was approximately equal between both versions.
-
-This demonstrates that the waypoint is responsible for enforcing the configured HTTP routing weights.
-
-## References
-
-- [Istio Ambient Mesh](https://istio.io/latest/docs/ambient/)
-- [Istio Waypoint Proxies](https://istio.io/latest/docs/ambient/usage/waypoint/)
-- [Istio Traffic Management](https://istio.io/latest/docs/concepts/traffic-management/)
-- [Kubernetes Gateway API](https://gateway-api.sigs.k8s.io/)
-- [Kiali Documentation](https://kiali.io/docs/)
-- [DevOps with Kubernetes](https://courses.mooc.fi/org/uh-cs/courses/devops-with-kubernetes)
+The exercise demonstrates how an existing Kubernetes application can be deployed using Knative Serving while preserving communication with other services in the cluster.
 
 ## Previous important steps
 <details>

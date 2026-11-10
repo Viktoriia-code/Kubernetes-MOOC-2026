@@ -29,7 +29,7 @@ spec:
                   name: log-output-config
                   key: MESSAGE
             - name: PINGPONG_URL
-              value: http://ping-pong-svc:80/pings
+              value: http://pingpong.exercises.svc.cluster.local/pings
             - name: GREETER_URL
               value: http://greeter-svc:80/
           ports:
